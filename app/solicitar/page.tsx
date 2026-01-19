@@ -3,7 +3,7 @@
 import { GovHeader } from "@/components/GovHeader";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { ArrowRight, Check, Loader2, User, FileText, School, Upload, X, ShieldCheck, AlertCircle, Lock, Mail } from "lucide-react";
+import { ArrowRight, Check, Loader2, User, FileText, School, Upload, X, ShieldCheck, AlertCircle, Lock, Mail, Info } from "lucide-react";
 
 // Types for API Response
 interface UserData {
