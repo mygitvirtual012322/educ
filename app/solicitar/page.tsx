@@ -163,9 +163,8 @@ export default function SolicitarPage() {
             if (!isCorrect) {
                 setQuizError("Resposta incorreta. Por motivos de segurança, verifique seus dados.");
                 setSelectedOption(null); // Reset selection on error
-            } else {
-                setSelectedOption(null); // Reset selection on success
             }
+            // Don't reset on success - keep it selected
 
             setLoading(false);
         }, 800);
