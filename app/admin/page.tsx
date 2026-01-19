@@ -1,17 +1,34 @@
 "use client";
 
 import { GovHeader } from "@/components/GovHeader";
-import { Search, Filter, Download, Eye, MoreHorizontal, CheckCircle2, Clock, XCircle } from "lucide-react";
-import { useState } from "react";
+import { Search, Filter, Download, Eye, MoreHorizontal, CheckCircle2, Clock, XCircle, RotateCcw } from "lucide-react";
+import { useState, useEffect } from "react";
+import { Solicitation } from "@/lib/db";
 
 export default function AdminPage() {
-    // Mock Data simulating DB records
-    const [solicitacoes, setSolicitacoes] = useState([
-        { id: 1, nome: "JOÃO SILVA SANTOS", cpf: "123.***.***-00", data: "19/01/2026", status: "analise", docs: 3, valor: "700,00" },
-        { id: 2, nome: "MARIA OLIVEIRA", cpf: "456.***.***-11", data: "19/01/2026", status: "aprovado", docs: 4, valor: "350,00" },
-        { id: 3, nome: "PEDRO ALVES", cpf: "789.***.***-22", data: "18/01/2026", status: "pendente", docs: 1, valor: "1.050,00" },
-        { id: 4, nome: "ANA COSTA", cpf: "321.***.***-33", data: "18/01/2026", status: "rejeitado", docs: 2, valor: "350,00" },
-    ]);
+    const [solicitacoes, setSolicitacoes] = useState<Solicitation[]>([]);
+    const [loading, setLoading] = useState(true);
+
+    const fetchData = async () => {
+        try {
+            const res = await fetch('/api/solicitations');
+            const data = await res.json();
+            if (Array.isArray(data)) {
+                setSolicitacoes(data.reverse()); // Show newest first
+            }
+        } catch (error) {
+            console.error("Failed to fetch data", error);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    useEffect(() => {
+        fetchData();
+        // Poll every 5 seconds for updates
+        const interval = setInterval(fetchData, 5000);
+        return () => clearInterval(interval);
+    }, []);
 
     const getStatusColor = (status: string) => {
         switch (status) {
@@ -46,10 +63,16 @@ export default function AdminPage() {
                         <h2 className="text-2xl font-bold text-slate-800 mb-1">Solicitações Recentes</h2>
                         <p className="text-slate-500 text-sm">Gerencie os pedidos de cartão e documentação.</p>
                     </div>
-                    <button className="bg-gov-blue-600 text-white px-4 py-2 rounded-lg font-bold text-sm flex items-center gap-2 hover:bg-gov-blue-700 transition-colors">
-                        <Download className="h-4 w-4" />
-                        Exportar CSV
-                    </button>
+                    <div className="flex gap-2">
+                        <button onClick={fetchData} className="bg-white border border-slate-200 text-slate-600 px-4 py-2 rounded-lg font-bold text-sm flex items-center gap-2 hover:bg-slate-50 transition-colors">
+                            <RotateCcw className="h-4 w-4" />
+                            Atualizar
+                        </button>
+                        <button className="bg-gov-blue-600 text-white px-4 py-2 rounded-lg font-bold text-sm flex items-center gap-2 hover:bg-gov-blue-700 transition-colors">
+                            <Download className="h-4 w-4" />
+                            Exportar CSV
+                        </button>
+                    </div>
                 </div>
 
                 {/* Filters */}
@@ -85,44 +108,56 @@ export default function AdminPage() {
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-slate-100">
-                            {solicitacoes.map((sol) => (
-                                <tr key={sol.id} className="hover:bg-slate-50 transition-colors group">
-                                    <td className="p-4">
-                                        <p className="font-bold text-slate-800 text-sm">{sol.nome}</p>
-                                        <p className="text-xs text-slate-500">Protocolo: #{2026000 + sol.id}</p>
-                                    </td>
-                                    <td className="p-4 text-sm text-slate-600 font-mono">{sol.cpf}</td>
-                                    <td className="p-4 text-sm text-slate-600">{sol.data}</td>
-                                    <td className="p-4 text-sm font-bold text-green-700">R$ {sol.valor}</td>
-                                    <td className="p-4 text-center">
-                                        <span className="bg-slate-100 text-slate-600 px-2 py-1 rounded text-xs font-bold">
-                                            {sol.docs}
-                                        </span>
-                                    </td>
-                                    <td className="p-4 text-center">
-                                        <span className={`px-2 py-1 rounded-full text-xs font-bold uppercase tracking-wide ${getStatusColor(sol.status)}`}>
-                                            {sol.status}
-                                        </span>
-                                    </td>
-                                    <td className="p-4 text-right">
-                                        <button className="text-slate-400 hover:text-gov-blue-600 p-2 hover:bg-blue-50 rounded-full transition-colors">
-                                            <MoreHorizontal className="h-5 w-5" />
-                                        </button>
+                            {loading && solicitacoes.length === 0 ? (
+                                <tr>
+                                    <td colSpan={7} className="p-8 text-center text-slate-500">
+                                        Carregando dados...
                                     </td>
                                 </tr>
-                            ))}
+                            ) : solicitacoes.length === 0 ? (
+                                <tr>
+                                    <td colSpan={7} className="p-8 text-center text-slate-500">
+                                        Nenhuma solicitação encontrada.
+                                    </td>
+                                </tr>
+                            ) : (
+                                solicitacoes.map((sol) => (
+                                    <tr key={sol.cpf} className="hover:bg-slate-50 transition-colors group">
+                                        <td className="p-4">
+                                            <p className="font-bold text-slate-800 text-sm uppercase">{sol.nome}</p>
+                                            <p className="text-xs text-slate-500 truncate max-w-[200px]">{sol.email}</p>
+                                        </td>
+                                        <td className="p-4 text-sm text-slate-600 font-mono">{sol.cpf}</td>
+                                        <td className="p-4 text-sm text-slate-600">{sol.created_at}</td>
+                                        <td className="p-4 text-sm font-bold text-green-700">R$ {sol.valor || '0,00'}</td>
+                                        <td className="p-4 text-center">
+                                            <span className="bg-slate-100 text-slate-600 px-2 py-1 rounded text-xs font-bold">
+                                                {Object.keys(sol.docs || {}).length}
+                                            </span>
+                                        </td>
+                                        <td className="p-4 text-center">
+                                            <span className={`px-2 py-1 rounded-full text-xs font-bold uppercase tracking-wide ${getStatusColor(sol.status)}`}>
+                                                {sol.status}
+                                            </span>
+                                        </td>
+                                        <td className="p-4 text-right">
+                                            <button className="text-slate-400 hover:text-gov-blue-600 p-2 hover:bg-blue-50 rounded-full transition-colors">
+                                                <MoreHorizontal className="h-5 w-5" />
+                                            </button>
+                                        </td>
+                                    </tr>
+                                ))
+                            )}
                         </tbody>
                     </table>
                 </div>
 
                 {/* Pagination */}
                 <div className="flex justify-between items-center mt-4 text-sm text-slate-500">
-                    <p>Mostrando 4 de 128 registros</p>
+                    <p>Total de registros: {solicitacoes.length}</p>
                     <div className="flex gap-2">
                         <button className="px-3 py-1 border border-slate-200 rounded hover:bg-white disabled:opacity-50">Anterior</button>
                         <button className="px-3 py-1 bg-gov-blue-600 text-white rounded font-bold">1</button>
-                        <button className="px-3 py-1 border border-slate-200 rounded hover:bg-white">2</button>
-                        <button className="px-3 py-1 border border-slate-200 rounded hover:bg-white">3</button>
                         <button className="px-3 py-1 border border-slate-200 rounded hover:bg-white">Próximo</button>
                     </div>
                 </div>
