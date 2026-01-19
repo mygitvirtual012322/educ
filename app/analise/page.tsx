@@ -16,8 +16,8 @@ function AnaliseContent() {
     ]);
 
     useEffect(() => {
-        // Simulate step progress
-        const timings = [1000, 2500, 4000];
+        // Simulate step progress with longer timing
+        const timings = [2000, 4500, 7000];
 
         timings.forEach((time, index) => {
             setTimeout(() => {
@@ -28,11 +28,11 @@ function AnaliseContent() {
             }, time);
         });
 
-        // Redirect to approved page
+        // Redirect to approved page after 9 seconds
         setTimeout(() => {
             const params = new URLSearchParams(searchParams.toString());
             router.push(`/aprovado?${params.toString()}`);
-        }, 5500);
+        }, 9000);
     }, [router, searchParams]);
 
     return (

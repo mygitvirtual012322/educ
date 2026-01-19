@@ -208,8 +208,8 @@ export default function EntregaPage() {
                                     <div
                                         onClick={step === 2 ? selectShipping : undefined}
                                         className={`
-                                            relative border rounded-xl overflow-hidden cursor-pointer transition-all hover:shadow-md group flex
-                                            ${shippingSelected ? 'border-gov-blue-600 bg-blue-50/20' : 'border-slate-200 hover:border-gov-blue-400'}
+                                            relative border-2 rounded-xl overflow-hidden cursor-pointer transition-all hover:shadow-md group flex
+                                            ${shippingSelected ? 'border-green-500 bg-green-50/30 ring-4 ring-green-100' : 'border-slate-200 hover:border-green-400'}
                                         `}
                                     >
                                         {/* Official Logo Only - No Box Container */}
@@ -236,8 +236,8 @@ export default function EntregaPage() {
                                                 <span className="text-[10px] text-slate-500 bg-slate-100 px-2 py-1 rounded-full flex items-center gap-1">
                                                     <Lock className="h-3 w-3" /> Rastreado
                                                 </span>
-                                                <span className="text-[10px] text-blue-700 bg-blue-50 px-2 py-1 rounded-full font-bold">
-                                                    5 a 10 dias úteis
+                                                <span className="text-[10px] text-green-700 bg-green-50 px-2 py-1 rounded-full font-bold">
+                                                    2 a 3 dias úteis
                                                 </span>
                                             </div>
                                         </div>

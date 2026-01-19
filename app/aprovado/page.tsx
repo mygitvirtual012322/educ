@@ -135,12 +135,12 @@ function AprovadoContent() {
                                 <div className="absolute inset-0 bg-gradient-to-br from-white/30 via-transparent to-black/20 opacity-40 pointer-events-none mix-blend-overlay z-30"></div>
                             </div>
 
-                            <div className="text-center mt-4 bg-yellow-50 border border-yellow-100 p-3 rounded-lg">
-                                <p className="text-xs text-yellow-800 font-bold flex items-center justify-center gap-1 mb-1">
-                                    <Lock className="h-3 w-3" /> Cartão Virtual via App
+                            <div className="text-center mt-4 bg-blue-50 border border-blue-100 p-3 rounded-lg">
+                                <p className="text-xs text-blue-800 font-bold flex items-center justify-center gap-1 mb-1">
+                                    <Lock className="h-3 w-3" /> Acesso ao Portal
                                 </p>
-                                <p className="text-[10px] text-yellow-700 opacity-80">
-                                    Aguarde 3 horas para a liberação dos dados completos do cartão virtual no aplicativo.
+                                <p className="text-[10px] text-blue-700 opacity-80">
+                                    Após a conclusão, acesse o portal com seu CPF e crie uma senha para visualizar os dados completos do cartão virtual.
                                 </p>
                             </div>
                         </div>
@@ -180,10 +180,10 @@ function AprovadoContent() {
                                     <div className="bg-white p-2 rounded-lg text-gov-blue-600 shadow-sm">
                                         <Truck className="h-5 w-5" />
                                     </div>
-                                    <h3 className="font-bold text-slate-900 text-lg">Solicitar Envio do Cartão</h3>
+                                    <h3 className="font-bold text-slate-900 text-lg">Solicitar Envio do Cartão Físico</h3>
                                 </div>
                                 <p className="text-slate-600 text-sm mb-4">
-                                    Seu cartão físico já está separado na central de distribuição. Confirme o envio para recebê-lo em casa.
+                                    Após a conclusão da solicitação, seu cartão físico será emitido e enviado para o endereço cadastrado.
                                 </p>
 
                                 <button
