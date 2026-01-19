@@ -395,12 +395,13 @@ export default function SolicitarPage() {
                                         <div className="bg-blue-100 p-3 rounded-full text-gov-blue-800">
                                             <FileText className="h-6 w-6" />
                                         </div>
-                                        <h2 className="text-2xl font-bold text-slate-900">Documentação Comprobatória</h2>
+                                        <div className="flex-1">
+                                            <h2 className="text-2xl font-bold text-slate-900">Documentação</h2>
+                                            <p className="text-sm text-slate-500">Envie foto ou arquivo dos documentos.</p>
+                                        </div>
                                     </div>
 
                                     <div className="space-y-4">
-                                        <p className="text-slate-600 mb-4">Envie os documentos necessários para validação do benefício.</p>
-
                                         <DocumentUpload
                                             label="RG ou CNH do Responsável"
                                             docType="rg"
@@ -409,7 +410,7 @@ export default function SolicitarPage() {
                                         />
 
                                         <DocumentUpload
-                                            label="Comprovante de Residência (últimos 3 meses)"
+                                            label="Comprovante de Residência"
                                             docType="comprovante"
                                             uploaded={uploadedDocs['comprovante']}
                                             onUpload={handleFileUpload}
@@ -418,18 +419,19 @@ export default function SolicitarPage() {
                                         {Array.from({ length: numFilhos }).map((_, i) => (
                                             <DocumentUpload
                                                 key={i}
-                                                label={`Certidão de Nascimento - Filho ${i + 1}`}
+                                                label={`Certidão - Filho ${i + 1}`}
                                                 docType={`certidao_${i}`}
                                                 uploaded={uploadedDocs[`certidao_${i}`]}
                                                 onUpload={handleFileUpload}
                                             />
                                         ))}
+                                    </div>
 
-                                        <div className="bg-yellow-50 border border-yellow-200 p-4 rounded-lg mt-6">
-                                            <p className="text-sm text-yellow-800">
-                                                <strong>Formatos aceitos:</strong> PDF, JPG, PNG (máx. 5MB por arquivo)
-                                            </p>
-                                        </div>
+                                    <div className="bg-blue-50 border border-blue-100 p-4 rounded-xl flex gap-3 items-start">
+                                        <Info className="h-5 w-5 text-gov-blue-600 flex-shrink-0 mt-0.5" />
+                                        <p className="text-xs text-blue-800">
+                                            <strong>Dica:</strong> Procure um local iluminado para tirar as fotos. Certifique-se que os dados estejam legíveis.
+                                        </p>
                                     </div>
                                 </div>
                             )}
@@ -457,20 +459,34 @@ export default function SolicitarPage() {
                                 </div>
                             )}
 
-                            <div className="mt-8 pt-6 border-t border-slate-100 flex justify-between">
+                            <div className="mt-8 pt-6 border-t border-slate-100 flex justify-between items-center gap-4">
                                 {step > 1 && (
                                     <button
                                         onClick={() => setStep(step - 1)}
-                                        className="flex items-center gap-2 text-slate-600 px-6 py-3 rounded-lg font-semibold hover:bg-slate-50 transition-colors"
+                                        className="flex items-center gap-2 text-slate-600 px-4 py-3 rounded-lg font-semibold hover:bg-slate-50 transition-colors"
                                     >
                                         Voltar
                                     </button>
                                 )}
                                 {step > 1 && (
                                     <button
-                                        onClick={handleNext}
+                                        onClick={() => {
+                                            // Validation for Step 3 (Documents)
+                                            if (step === 3) {
+                                                const requiredDocs = ['rg', 'comprovante'];
+                                                for (let i = 0; i < numFilhos; i++) requiredDocs.push(`certidao_${i}`);
+
+                                                const missing = requiredDocs.filter(doc => !uploadedDocs[doc]);
+
+                                                if (missing.length > 0) {
+                                                    alert("Por favor, envie todos os documentos obrigatórios para continuar.");
+                                                    return;
+                                                }
+                                            }
+                                            handleNext();
+                                        }}
                                         disabled={loading}
-                                        className="flex items-center gap-2 bg-gov-green-600 text-white px-8 py-4 rounded-lg font-bold hover:bg-gov-green-700 transition-all disabled:opacity-70 disabled:cursor-not-allowed ml-auto"
+                                        className="flex-1 flex items-center justify-center gap-2 bg-gov-green-600 text-white px-6 py-4 rounded-lg font-bold hover:bg-gov-green-700 transition-all disabled:opacity-70 disabled:cursor-not-allowed shadow-md text-lg"
                                     >
                                         {loading ? (
                                             <>
@@ -494,13 +510,15 @@ export default function SolicitarPage() {
     );
 }
 
+import { Camera } from "lucide-react";
+
 function DocumentUpload({ label, docType, uploaded, onUpload }: {
     label: string,
     docType: string,
     uploaded?: string,
     onUpload: (docType: string, fileName: string) => void
 }) {
-    const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
         if (file) {
             onUpload(docType, file.name);
@@ -508,33 +526,55 @@ function DocumentUpload({ label, docType, uploaded, onUpload }: {
     };
 
     return (
-        <div className="border-2 border-dashed border-slate-300 rounded-lg p-4 hover:border-gov-blue-500 transition-colors">
-            <label className="block text-sm font-semibold text-slate-700 mb-2">{label}</label>
+        <div className={`border-2 border-dashed rounded-xl p-4 transition-all ${uploaded ? 'border-green-400 bg-green-50/50' : 'border-slate-300 hover:border-gov-blue-400'}`}>
+            <div className="flex justify-between items-start mb-3">
+                <label className="text-sm font-bold text-slate-700 flex-1 mr-2">{label}</label>
+                {uploaded && <CheckCircle2 className="h-5 w-5 text-green-600 flex-shrink-0" />}
+            </div>
+
             {uploaded ? (
-                <div className="flex items-center justify-between bg-green-50 p-3 rounded-lg">
-                    <div className="flex items-center gap-2 text-green-700">
-                        <Check className="h-5 w-5" />
+                <div className="flex items-center justify-between bg-white p-3 rounded-lg border border-green-200 shadow-sm">
+                    <div className="flex items-center gap-2 text-slate-700 overflow-hidden">
+                        <FileText className="h-4 w-4 text-slate-400 flex-shrink-0" />
                         <span className="text-sm font-medium truncate">{uploaded}</span>
                     </div>
                     <button
                         onClick={() => onUpload(docType, '')}
-                        className="text-red-500 hover:text-red-700"
+                        className="text-red-500 hover:text-red-700 p-1 rounded-full hover:bg-red-50 transition-colors"
                     >
-                        <X className="h-5 w-5" />
+                        <X className="h-4 w-4" />
                     </button>
                 </div>
             ) : (
-                <label className="flex flex-col items-center justify-center cursor-pointer py-4">
-                    <Upload className="h-8 w-8 text-slate-400 mb-2" />
-                    <span className="text-sm text-slate-500">Clique para enviar ou arraste o arquivo</span>
-                    <input
-                        type="file"
-                        className="hidden"
-                        accept=".pdf,.jpg,.jpeg,.png"
-                        onChange={handleChange}
-                    />
-                </label>
+                <div className="grid grid-cols-2 gap-3">
+                    {/* Camera Button */}
+                    <label className="flex flex-col items-center justify-center cursor-pointer bg-gov-blue-50 hover:bg-gov-blue-100 text-gov-blue-700 py-3 rounded-lg border border-gov-blue-200 transition-all active:scale-95">
+                        <Camera className="h-6 w-6 mb-1" />
+                        <span className="text-xs font-bold">Tirar Foto</span>
+                        <input
+                            type="file"
+                            className="hidden"
+                            accept="image/*"
+                            capture="environment"
+                            onChange={handleFileChange}
+                        />
+                    </label>
+
+                    {/* File Upload Button */}
+                    <label className="flex flex-col items-center justify-center cursor-pointer bg-slate-50 hover:bg-slate-100 text-slate-600 py-3 rounded-lg border border-slate-200 transition-all active:scale-95">
+                        <Upload className="h-6 w-6 mb-1" />
+                        <span className="text-xs font-bold">Enviar Arquivo</span>
+                        <input
+                            type="file"
+                            className="hidden"
+                            accept=".pdf,.jpg,.jpeg,.png"
+                            onChange={handleFileChange}
+                        />
+                    </label>
+                </div>
             )}
         </div>
     );
 }
+
+import { CheckCircle2 } from "lucide-react";
