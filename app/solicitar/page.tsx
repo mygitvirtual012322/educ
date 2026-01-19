@@ -334,13 +334,13 @@ export default function SolicitarPage() {
                                                             `}
                                                         >
                                                             <span className="text-lg">{option}</span>
-                                                            <div className={`h-7 w-7 rounded-full border-3 flex items-center justify-center transition-all flex-shrink-0
+                                                            <div className={`h-6 w-6 rounded-full border-2 flex items-center justify-center transition-all flex-shrink-0
                                                                 ${isSelected
                                                                     ? 'border-gov-blue-600 bg-white'
                                                                     : 'border-slate-400 bg-white group-hover:border-gov-blue-500'
                                                                 }
                                                             `}>
-                                                                {isSelected && <div className="h-4 w-4 bg-gov-blue-600 rounded-full" />}
+                                                                {isSelected && <div className="h-3 w-3 bg-gov-blue-600 rounded-full"></div>}
                                                             </div>
                                                         </button>
                                                     );
