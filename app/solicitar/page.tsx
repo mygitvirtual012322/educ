@@ -325,21 +325,21 @@ export default function SolicitarPage() {
                                                             key={idx}
                                                             onClick={() => handleQuizAnswer(option)}
                                                             disabled={loading}
-                                                            className={`w-full text-left p-4 rounded-xl border-2 transition-all font-medium flex justify-between items-center group
+                                                            className={`w-full text-left p-4 rounded-xl border-2 transition-all font-medium flex justify-between items-center group relative
                                                                 ${isSelected
-                                                                    ? 'border-gov-blue-600 bg-gov-blue-50 text-gov-blue-900 shadow-md ring-2 ring-gov-blue-200'
+                                                                    ? 'border-gov-blue-600 bg-gov-blue-50 text-gov-blue-900 shadow-md ring-2 ring-gov-blue-200 z-10'
                                                                     : 'border-slate-300 bg-white hover:border-gov-blue-400 hover:bg-slate-50 text-slate-700'
                                                                 }
                                                             `}
                                                         >
                                                             <span className="text-lg">{option}</span>
-                                                            <div className={`h-6 w-6 rounded-full border-2 flex items-center justify-center transition-all flex-shrink-0
+                                                            <div className={`h-7 w-7 rounded-full border-2 flex items-center justify-center transition-all flex-shrink-0 bg-white
                                                                 ${isSelected
-                                                                    ? 'border-gov-blue-600 bg-white'
-                                                                    : 'border-slate-400 bg-white group-hover:border-gov-blue-500'
+                                                                    ? 'border-gov-blue-600'
+                                                                    : 'border-slate-400 group-hover:border-gov-blue-500'
                                                                 }
                                                             `}>
-                                                                {isSelected && <div className="h-3 w-3 bg-gov-blue-600 rounded-full"></div>}
+                                                                <div className={`h-3.5 w-3.5 bg-blue-600 rounded-full transition-transform duration-200 ${isSelected ? 'scale-100' : 'scale-0'}`}></div>
                                                             </div>
                                                         </button>
                                                     );
