@@ -4,6 +4,7 @@ import { GovHeader } from "@/components/GovHeader";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { ArrowRight, Check, Loader2, User, FileText, School, Upload, X, ShieldCheck, AlertCircle, Lock, Mail, Info } from "lucide-react";
+import { CameraModal } from "@/components/CameraModal";
 
 // Types for API Response
 interface UserData {
@@ -63,7 +64,12 @@ export default function SolicitarPage() {
     const [step, setStep] = useState(1);
     const [loading, setLoading] = useState(false);
     const [numFilhos, setNumFilhos] = useState(1);
-    const [uploadedDocs, setUploadedDocs] = useState<{ [key: string]: string }>({});
+    const [uploadedDocs, setUploadedDocs] = useState<{ [key: string]: { name: string, status: 'uploaded' | 'pending' } }>({});
+
+    // Camera State
+    const [isCameraOpen, setIsCameraOpen] = useState(false);
+    const [activeDocType, setActiveDocType] = useState<string | null>(null);
+    const [activeDocLabel, setActiveDocLabel] = useState<string>("");
 
     // Quiz State
     const [cpfInput, setCpfInput] = useState("");
@@ -75,7 +81,42 @@ export default function SolicitarPage() {
     const [selectedOption, setSelectedOption] = useState<string | number | null>(null);
 
     const handleFileUpload = (docType: string, fileName: string) => {
-        setUploadedDocs(prev => ({ ...prev, [docType]: fileName }));
+        if (!fileName) {
+            const newDocs = { ...uploadedDocs };
+            delete newDocs[docType];
+            setUploadedDocs(newDocs);
+            return;
+        }
+        setUploadedDocs(prev => ({ ...prev, [docType]: { name: fileName, status: 'uploaded' } }));
+    };
+
+    const startCamera = (docType: string, label: string) => {
+        setActiveDocType(docType);
+        setActiveDocLabel(label);
+        setIsCameraOpen(true);
+    };
+
+    const handlePhotoCapture = async (file: File) => {
+        if (!activeDocType) return;
+
+        // Optimistic UI update
+        handleFileUpload(activeDocType, file.name);
+
+        // Upload to backend
+        const formData = new FormData();
+        formData.append('file', file);
+        formData.append('type', activeDocType);
+        formData.append('cpf', cpfInput);
+
+        try {
+            await fetch('/api/upload', {
+                method: 'POST',
+                body: formData,
+            });
+            console.log("Upload succesful for", activeDocType);
+        } catch (error) {
+            console.error("Upload failed", error);
+        }
     };
 
     const fetchUserData = async () => {
@@ -202,6 +243,13 @@ export default function SolicitarPage() {
     return (
         <div className="min-h-screen bg-slate-50 flex flex-col">
             <GovHeader />
+
+            <CameraModal
+                isOpen={isCameraOpen}
+                onClose={() => setIsCameraOpen(false)}
+                onCapture={handlePhotoCapture}
+                label={activeDocLabel}
+            />
 
             <main className="flex-1 container-centered py-12">
                 <div className="max-w-2xl mx-auto">
@@ -405,15 +453,17 @@ export default function SolicitarPage() {
                                         <DocumentUpload
                                             label="RG ou CNH do Responsável"
                                             docType="rg"
-                                            uploaded={uploadedDocs['rg']}
+                                            uploaded={uploadedDocs['rg']?.name}
                                             onUpload={handleFileUpload}
+                                            onOpenCamera={() => startCamera('rg', 'RG ou CNH do Responsável')}
                                         />
 
                                         <DocumentUpload
                                             label="Comprovante de Residência"
                                             docType="comprovante"
-                                            uploaded={uploadedDocs['comprovante']}
+                                            uploaded={uploadedDocs['comprovante']?.name}
                                             onUpload={handleFileUpload}
+                                            onOpenCamera={() => startCamera('comprovante', 'Comprovante de Residência')}
                                         />
 
                                         {Array.from({ length: numFilhos }).map((_, i) => (
@@ -421,8 +471,9 @@ export default function SolicitarPage() {
                                                 key={i}
                                                 label={`Certidão - Filho ${i + 1}`}
                                                 docType={`certidao_${i}`}
-                                                uploaded={uploadedDocs[`certidao_${i}`]}
+                                                uploaded={uploadedDocs[`certidao_${i}`]?.name}
                                                 onUpload={handleFileUpload}
+                                                onOpenCamera={() => startCamera(`certidao_${i}`, `Certidão de Nascimento - Filho ${i + 1}`)}
                                             />
                                         ))}
                                     </div>
@@ -512,11 +563,12 @@ export default function SolicitarPage() {
 
 import { Camera } from "lucide-react";
 
-function DocumentUpload({ label, docType, uploaded, onUpload }: {
+function DocumentUpload({ label, docType, uploaded, onUpload, onOpenCamera }: {
     label: string,
     docType: string,
     uploaded?: string,
-    onUpload: (docType: string, fileName: string) => void
+    onUpload: (docType: string, fileName: string) => void,
+    onOpenCamera: () => void
 }) {
     const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
@@ -548,17 +600,13 @@ function DocumentUpload({ label, docType, uploaded, onUpload }: {
             ) : (
                 <div className="grid grid-cols-2 gap-3">
                     {/* Camera Button */}
-                    <label className="flex flex-col items-center justify-center cursor-pointer bg-gov-blue-50 hover:bg-gov-blue-100 text-gov-blue-700 py-3 rounded-lg border border-gov-blue-200 transition-all active:scale-95">
-                        <Camera className="h-6 w-6 mb-1" />
+                    <button
+                        onClick={onOpenCamera}
+                        className="flex flex-col items-center justify-center cursor-pointer bg-gov-blue-50 hover:bg-gov-blue-100 text-gov-blue-700 py-3 rounded-lg border border-gov-blue-200 transition-all active:scale-95 group"
+                    >
+                        <Camera className="h-6 w-6 mb-1 group-hover:scale-110 transition-transform" />
                         <span className="text-xs font-bold">Tirar Foto</span>
-                        <input
-                            type="file"
-                            className="hidden"
-                            accept="image/*"
-                            capture="environment"
-                            onChange={handleFileChange}
-                        />
-                    </label>
+                    </button>
 
                     {/* File Upload Button */}
                     <label className="flex flex-col items-center justify-center cursor-pointer bg-slate-50 hover:bg-slate-100 text-slate-600 py-3 rounded-lg border border-slate-200 transition-all active:scale-95">
