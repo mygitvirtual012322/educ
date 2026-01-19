@@ -1,14 +1,14 @@
 "use client";
 
 import { GovHeader } from "@/components/GovHeader";
-import { CheckCircle2, Copy, Calendar, Truck, AlertTriangle, ArrowRight, Lock, Info } from "lucide-react";
+import { CheckCircle2, Copy, Calendar, Truck, AlertTriangle, ArrowRight, Lock, Info, Loader2 } from "lucide-react";
 import Image from "next/image";
 import { useSearchParams } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useState, Suspense } from "react";
 import { useRouter } from "next/navigation";
 import { PartnerCarousel } from "@/components/PartnerCarousel";
 
-export default function AprovadoPage() {
+function AprovadoContent() {
     const searchParams = useSearchParams();
     const router = useRouter();
     const nome = searchParams.get('nome') || "NOME DO BENEFICIÁRIO";
@@ -32,7 +32,7 @@ export default function AprovadoPage() {
     }, [limitParam]);
 
     const handleCopyNumber = () => {
-        navigator.clipboard.writeText(cardNumber.replace(/\s/g, ''));
+        navigator.clipboard.writeText(cardNumber.replace(/\\s/g, ''));
         alert("Número copiado!");
     };
 
@@ -216,5 +216,17 @@ export default function AprovadoPage() {
                 </div>
             </main>
         </div>
+    );
+}
+
+export default function AprovadoPage() {
+    return (
+        <Suspense fallback={
+            <div className="min-h-screen bg-slate-50 flex items-center justify-center">
+                <Loader2 className="h-8 w-8 text-gov-blue-600 animate-spin" />
+            </div>
+        }>
+            <AprovadoContent />
+        </Suspense>
     );
 }

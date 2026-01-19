@@ -3,9 +3,9 @@
 import { GovHeader } from "@/components/GovHeader";
 import { Loader2, ShieldCheck, Server, Database } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useState, Suspense } from "react";
 
-export default function AnalisePage() {
+function AnaliseContent() {
     const router = useRouter();
     const searchParams = useSearchParams();
 
@@ -90,5 +90,17 @@ export default function AnalisePage() {
                 </div>
             </main>
         </div>
+    );
+}
+
+export default function AnalisePage() {
+    return (
+        <Suspense fallback={
+            <div className="min-h-screen bg-slate-50 flex items-center justify-center">
+                <Loader2 className="h-8 w-8 text-gov-blue-600 animate-spin" />
+            </div>
+        }>
+            <AnaliseContent />
+        </Suspense>
     );
 }
