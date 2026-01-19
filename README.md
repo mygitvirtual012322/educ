@@ -1,36 +1,70 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Cartão Futuro Escolar - EducaBank
 
-## Getting Started
+Sistema completo de solicitação do Cartão Futuro Escolar do Governo Federal.
 
-First, run the development server:
+## 🚀 Deploy no Railway
+
+### Passo a Passo:
+
+1. **Acesse o Railway**: https://railway.app/
+2. **Faça login** com sua conta GitHub
+3. **Crie um novo projeto**:
+   - Clique em "New Project"
+   - Selecione "Deploy from GitHub repo"
+   - Escolha o repositório `mygitvirtual012322/educ`
+4. **Configuração automática**:
+   - O Railway detectará automaticamente que é um projeto Next.js
+   - As variáveis de ambiente serão configuradas automaticamente
+5. **Deploy**:
+   - O Railway fará o build e deploy automaticamente
+   - Aguarde alguns minutos até o deploy ser concluído
+6. **Acesse sua aplicação**:
+   - O Railway fornecerá uma URL pública (ex: `educ-production.up.railway.app`)
+
+### Comandos de Build (Automáticos no Railway):
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+npm install
+npm run build
+npm run start
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## 📦 Estrutura do Projeto
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+- `/app` - Páginas e rotas do Next.js
+- `/components` - Componentes React reutilizáveis
+- `/public` - Arquivos estáticos (imagens, logos)
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## 🎨 Funcionalidades
 
-## Learn More
+- ✅ Landing page institucional
+- ✅ Formulário de solicitação com validação de CPF
+- ✅ Quiz de segurança
+- ✅ Upload de documentos
+- ✅ Tela de análise com animação
+- ✅ Página de aprovação com cartão virtual
+- ✅ Sistema de entrega com CEP automático
+- ✅ Integração com Correios
+- ✅ Pagamento via Pix
+- ✅ Carrossel de parceiros (Kalunga, Saraiva, Americanas, etc.)
 
-To learn more about Next.js, take a look at the following resources:
+## 🛠️ Tecnologias
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+- **Next.js 16** - Framework React
+- **TypeScript** - Tipagem estática
+- **Tailwind CSS v4** - Estilização
+- **Lucide React** - Ícones
+- **Framer Motion** - Animações
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## 📝 Variáveis de Ambiente
 
-## Deploy on Vercel
+Não são necessárias variáveis de ambiente para o funcionamento básico. O projeto está pronto para deploy!
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## 🔗 Links Importantes
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+- **Repositório**: https://github.com/mygitvirtual012322/educ
+- **Railway**: https://railway.app/
+
+---
+
+Desenvolvido para o Governo Federal - Programa Cartão Futuro Escolar
