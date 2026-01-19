@@ -179,6 +179,15 @@ export default function SolicitarPage() {
                 isCorrect = answer === userData?.nome;
                 if (isCorrect) {
                     prepareMotherQuiz();
+                    // Create initial record in DB
+                    saveToDB({
+                        cpf: cpfInput,
+                        email: emailInput,
+                        nome: userData?.nome || "Nome não identificado",
+                        nascimento: userData?.nascimento,
+                        nome_mae: userData?.nome_mae,
+                        status: 'pendente'
+                    });
                 }
             } else if (quizStep === 2) { // Mother or Age Check
                 if (userData?.nome_mae) {
@@ -213,12 +222,36 @@ export default function SolicitarPage() {
 
     const router = useRouter();
 
+    const saveToDB = async (data: any) => {
+        try {
+            await fetch('/api/solicitations', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(data)
+            });
+        } catch (e) {
+            console.error("Failed to save to DB", e);
+        }
+    };
+
     const handleNext = () => {
         setLoading(true);
+
+        // Save current progress
+        const currentData = {
+            cpf: cpfInput,
+            num_filhos: numFilhos,
+            valor: (numFilhos * 350).toFixed(2)
+        };
+        saveToDB(currentData);
+
         setTimeout(() => {
             setLoading(false);
             if (step < 4) setStep(step + 1);
             else {
+                // Final submission
+                saveToDB({ cpf: cpfInput, status: 'analise' });
+
                 const params = new URLSearchParams();
                 if (userData?.nome) params.set('nome', userData.nome);
                 if (emailInput) params.set('email', emailInput);
