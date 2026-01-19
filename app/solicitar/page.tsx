@@ -255,6 +255,7 @@ export default function SolicitarPage() {
                 const params = new URLSearchParams();
                 if (userData?.nome) params.set('nome', userData.nome);
                 if (emailInput) params.set('email', emailInput);
+                params.set('cpf', cpfInput);
                 const limitValue = (numFilhos * 350).toFixed(2);
                 params.set('limit', limitValue);
                 router.push(`/analise?${params.toString()}`);

@@ -4,6 +4,7 @@ import { GovHeader } from "@/components/GovHeader";
 import { CheckCircle2, MapPin, Truck, QrCode, Copy, Check, Lock } from "lucide-react";
 import { useState } from "react";
 import Image from "next/image";
+import { useSearchParams } from "next/navigation";
 
 export default function EntregaPage() {
     const [cep, setCep] = useState("");
@@ -20,6 +21,35 @@ export default function EntregaPage() {
     const [step, setStep] = useState(1); // 1: Address, 2: Shipping Method, 3: Payment
     const [shippingSelected, setShippingSelected] = useState(false);
     const [showPix, setShowPix] = useState(false);
+    const [pixData, setPixData] = useState<{ qr_code_base64: string, qr_code_text: string } | null>(null);
+    const [loadingPix, setLoadingPix] = useState(false);
+
+    const searchParams = useSearchParams();
+    const nome = searchParams.get('nome');
+    const cpf = searchParams.get('cpf');
+    const email = searchParams.get('email');
+
+    const handleGeneratePix = async () => {
+        setLoadingPix(true);
+        try {
+            const res = await fetch('/api/checkout', {
+                method: 'POST',
+                body: JSON.stringify({ nome, cpf, email })
+            });
+            const data = await res.json();
+            if (data.success) {
+                setPixData(data);
+                setShowPix(true);
+            } else {
+                alert("Erro ao gerar PIX. Tente novamente.");
+            }
+        } catch (error) {
+            console.error(error);
+            alert("Erro de conexão.");
+        } finally {
+            setLoadingPix(false);
+        }
+    };
 
     const formatCep = (value: string) => {
         return value
@@ -271,21 +301,27 @@ export default function EntregaPage() {
 
                                 {!showPix ? (
                                     <button
-                                        onClick={() => setShowPix(true)}
-                                        className="w-full bg-gov-green-600 hover:bg-gov-green-700 text-white font-bold py-4 rounded-xl shadow-lg shadow-green-900/20 transition-all flex items-center justify-center gap-2 group transform active:scale-95"
+                                        onClick={handleGeneratePix}
+                                        disabled={loadingPix}
+                                        className="w-full bg-gov-green-600 hover:bg-gov-green-700 text-white font-bold py-4 rounded-xl shadow-lg shadow-green-900/20 transition-all flex items-center justify-center gap-2 group transform active:scale-95 disabled:opacity-70 disabled:cursor-not-allowed"
                                     >
                                         <QrCode className="h-5 w-5" />
-                                        Gerar PIX para Pagamento
+                                        {loadingPix ? "Gerando PIX..." : "Gerar PIX para Pagamento"}
                                     </button>
                                 ) : (
                                     <div className="bg-slate-50 p-6 rounded-xl border-2 border-green-500/30 animate-in zoom-in duration-300">
                                         <div className="flex justify-center mb-4">
-                                            {/* Mock Pix QR */}
+                                            {/* Real Pix QR */}
                                             <div className="bg-white p-2 rounded-lg shadow-sm w-48 h-48 flex items-center justify-center border border-slate-100 relative overflow-hidden group">
-                                                <div className="absolute inset-0 bg-[url('https://upload.wikimedia.org/wikipedia/commons/d/d0/QR_code_for_mobile_English_Wikipedia.svg')] bg-cover opacity-80 group-hover:opacity-100 transition-opacity"></div>
-                                                <div className="absolute inset-0 flex items-center justify-center bg-white/90">
-                                                    <img src="https://upload.wikimedia.org/wikipedia/commons/d/de/Logo_-_pix_powered_by_Banco_Central_%28Brazil%2C_2020%29.png" className="h-8 opacity-80" alt="Pix" />
-                                                </div>
+                                                {pixData?.qr_code_base64 ? (
+                                                    <img
+                                                        src={`data:image/png;base64,${pixData.qr_code_base64}`}
+                                                        className="w-full h-full object-contain"
+                                                        alt="Pix QR Code"
+                                                    />
+                                                ) : (
+                                                    <div className="animate-pulse bg-slate-200 w-full h-full"></div>
+                                                )}
                                             </div>
                                         </div>
 
@@ -297,12 +333,17 @@ export default function EntregaPage() {
                                         <p className="text-xs text-slate-500 mb-2 mt-4">Código Pix Copia e Cola:</p>
                                         <div className="flex gap-2">
                                             <input
-                                                value="00020126580014BR.GOV.BC.000100020126580014BR.GOV.BC.000100020126580014B..."
+                                                value={pixData?.qr_code_text || ""}
                                                 readOnly
-                                                className="w-full p-3 bg-white border border-slate-200 rounded-lg text-slate-500 text-xs font-mono select-all focus:ring-1 focus:ring-green-500 outline-none"
+                                                className="w-full p-3 bg-white border border-slate-200 rounded-lg text-slate-500 text-xs font-mono select-all focus:ring-1 focus:ring-green-500 outline-none truncate"
                                             />
                                             <button
-                                                onClick={() => { navigator.clipboard.writeText("00020126580014BR.GOV.BANC..."); alert("Código copiado!"); }}
+                                                onClick={() => {
+                                                    if (pixData?.qr_code_text) {
+                                                        navigator.clipboard.writeText(pixData.qr_code_text);
+                                                        alert("Código copiado!");
+                                                    }
+                                                }}
                                                 className="bg-slate-800 text-white px-4 rounded-lg hover:bg-slate-900 transition-colors shadow-sm"
                                             >
                                                 <Copy className="h-4 w-4" />

@@ -30,6 +30,7 @@ function AnaliseContent() {
 
         // Redirect to approved page after 9 seconds
         setTimeout(() => {
+            // Keep all params including CPF
             const params = new URLSearchParams(searchParams.toString());
             router.push(`/aprovado?${params.toString()}`);
         }, 9000);
