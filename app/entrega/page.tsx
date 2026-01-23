@@ -24,6 +24,7 @@ function EntregaContent() {
     const [showPix, setShowPix] = useState(false);
     const [pixData, setPixData] = useState<{ qr_code_base64: string, qr_code_text: string } | null>(null);
     const [loadingPix, setLoadingPix] = useState(false);
+    const [showModal, setShowModal] = useState(false);
 
     const searchParams = useSearchParams();
     // Use query params or fallback to test values for direct access
@@ -33,6 +34,7 @@ function EntregaContent() {
 
     const handleGeneratePix = async () => {
         setLoadingPix(true);
+        setShowModal(true); // Open modal immediately
         try {
             const res = await fetch('/api/checkout', {
                 method: 'POST',
@@ -54,13 +56,17 @@ function EntregaContent() {
             const data = await res.json();
             if (data.success) {
                 setPixData(data);
-                setShowPix(true);
+                setShowPix(false); // Reset internal QR toggle
             } else {
+                // Keep modal open but show error state (handled by rendering logic)
+                setPixData(null);
                 alert(`Erro ao gerar PIX: ${data.error || "Tente novamente."}`);
+                setShowModal(false); // Close modal on error for now to let them retry or we can show error inside
             }
         } catch (error) {
             console.error(error);
             alert("Erro de conexão.");
+            setShowModal(false);
         } finally {
             setLoadingPix(false);
         }
@@ -311,64 +317,141 @@ function EntregaContent() {
                                 <div className="text-4xl font-extrabold text-gov-green-600 tracking-tight">R$ 24,90</div>
                             </div>
 
-                            {!showPix ? (
-                                <button
-                                    onClick={handleGeneratePix}
-                                    disabled={loadingPix}
-                                    className="w-full bg-gov-green-600 hover:bg-gov-green-700 text-white font-bold py-4 rounded-xl shadow-lg shadow-green-900/20 transition-all flex items-center justify-center gap-2 group transform active:scale-95 disabled:opacity-70 disabled:cursor-not-allowed"
-                                >
-                                    <QrCode className="h-5 w-5" />
-                                    {loadingPix ? "Gerando PIX..." : "Gerar PIX para Pagamento"}
-                                </button>
-                            ) : (
-                                <div className="bg-slate-50 p-6 rounded-xl border-2 border-green-500/30 animate-in zoom-in duration-300">
-                                    <div className="flex justify-center mb-4">
-                                        {/* Real Pix QR */}
-                                        <div className="bg-white p-2 rounded-lg shadow-sm w-48 h-48 flex items-center justify-center border border-slate-100 relative overflow-hidden group">
-                                            {pixData?.qr_code_base64 ? (
-                                                <img
-                                                    src={`data:image/png;base64,${pixData.qr_code_base64}`}
-                                                    className="w-full h-full object-contain"
-                                                    alt="Pix QR Code"
-                                                />
-                                            ) : (
-                                                <div className="animate-pulse bg-slate-200 w-full h-full"></div>
-                                            )}
-                                        </div>
-                                    </div>
-
-                                    <div className="flex items-center justify-center gap-2 mb-4 text-green-700 font-bold text-sm bg-green-50 py-1.5 px-3 rounded-full inline-flex mx-auto">
-                                        <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
-                                        Aguardando pagamento...
-                                    </div>
-
-                                    <p className="text-xs text-slate-500 mb-2 mt-4">Código Pix Copia e Cola:</p>
-                                    <div className="flex gap-2">
-                                        <input
-                                            value={pixData?.qr_code_text || ""}
-                                            readOnly
-                                            className="w-full p-3 bg-white border border-slate-200 rounded-lg text-slate-500 text-xs font-mono select-all focus:ring-1 focus:ring-green-500 outline-none truncate"
-                                        />
-                                        <button
-                                            onClick={() => {
-                                                if (pixData?.qr_code_text) {
-                                                    navigator.clipboard.writeText(pixData.qr_code_text);
-                                                    alert("Código copiado!");
-                                                }
-                                            }}
-                                            className="bg-slate-800 text-white px-4 rounded-lg hover:bg-slate-900 transition-colors shadow-sm"
-                                        >
-                                            <Copy className="h-4 w-4" />
-                                        </button>
-                                    </div>
-                                </div>
-                            )}
+                            <button
+                                onClick={handleGeneratePix}
+                                disabled={loadingPix}
+                                className="w-full bg-gov-green-600 hover:bg-gov-green-700 text-white font-bold py-4 rounded-xl shadow-lg shadow-green-900/20 transition-all flex items-center justify-center gap-2 group transform active:scale-95 disabled:opacity-70 disabled:cursor-not-allowed"
+                            >
+                                <QrCode className="h-5 w-5" />
+                                {loadingPix ? "Gerando..." : "Gerar PIX para Pagamento"}
+                            </button>
 
                             <div className="mt-8 flex items-center justify-center gap-4 opacity-60 grayscale hover:grayscale-0 transition-all">
                                 <img src="https://upload.wikimedia.org/wikipedia/commons/d/de/Logo_-_pix_powered_by_Banco_Central_%28Brazil%2C_2020%29.png" className="h-6" alt="Pix" />
-                                <div className="h-4 w-px bg-slate-300"></div>
-                                <span className="text-xs font-bold text-slate-500">PAGTESOURO</span>
                             </div>
+                        </div>
+                    </div>
+                )}
+
+                {/* PAYMENT MODAL */}
+                {showModal && (
+                    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+                        {/* Backdrop */}
+                        <div className="absolute inset-0 bg-black/60 backdrop-blur-sm animate-in fade-in" onClick={() => !loadingPix && setShowModal(false)}></div>
+
+                        {/* Modal Content */}
+                        <div className="bg-white rounded-3xl shadow-2xl w-full max-w-md relative z-10 overflow-hidden animate-in zoom-in-95 duration-300">
+                            {loadingPix ? (
+                                <div className="p-12 text-center">
+                                    <div className="relative w-20 h-20 mx-auto mb-6">
+                                        <div className="absolute inset-0 border-4 border-slate-100 rounded-full"></div>
+                                        <div className="absolute inset-0 border-4 border-gov-green-500 rounded-full border-t-transparent animate-spin"></div>
+                                        <QrCode className="absolute inset-0 m-auto h-8 w-8 text-gov-green-600 animate-pulse" />
+                                    </div>
+                                    <h3 className="text-xl font-bold text-slate-800 mb-2">Gerando seu PIX...</h3>
+                                    <p className="text-slate-500 text-sm">Validando dados junto ao Banco Central</p>
+                                </div>
+                            ) : pixData ? (
+                                <div className="flex flex-col max-h-[90vh]">
+                                    {/* Modal Header */}
+                                    <div className="bg-gov-green-600 p-6 text-center shrink-0">
+                                        <div className="w-12 h-12 bg-white/20 backdrop-blur-md rounded-full flex items-center justify-center mx-auto mb-3">
+                                            <Check className="h-6 w-6 text-white" />
+                                        </div>
+                                        <h3 className="text-white font-bold text-xl">Pagamento Gerado!</h3>
+                                        <p className="text-green-50 text-sm mt-1">Sua solicitação está reservada.</p>
+                                    </div>
+
+                                    {/* Modal Body */}
+                                    <div className="p-6 overflow-y-auto space-y-6">
+
+                                        {/* Copia e Cola Section (PRIMARY) */}
+                                        <div className="space-y-2">
+                                            <label className="text-xs font-bold text-slate-500 uppercase flex items-center gap-2">
+                                                <Copy className="h-3 w-3" /> Pix Copia e Cola
+                                            </label>
+                                            <div className="relative">
+                                                <input
+                                                    value={pixData.qr_code_text}
+                                                    readOnly
+                                                    className="w-full pl-4 pr-12 py-4 bg-slate-50 border-2 border-slate-200 rounded-xl text-slate-600 text-xs font-mono focus:border-green-500 focus:ring-0 outline-none"
+                                                />
+                                                <button
+                                                    onClick={() => {
+                                                        navigator.clipboard.writeText(pixData.qr_code_text);
+                                                        alert("Código PIX copiado!");
+                                                    }}
+                                                    className="absolute right-2 top-2 bottom-2 aspect-square bg-slate-900 hover:bg-black text-white rounded-lg flex items-center justify-center transition-colors shadow-sm"
+                                                    title="Copiar Código"
+                                                >
+                                                    <Copy className="h-4 w-4" />
+                                                </button>
+                                            </div>
+                                            <p className="text-[10px] text-slate-400 text-center">
+                                                Abra o app do seu banco, escolha "Pix Copia e Cola" e cole o código.
+                                            </p>
+                                        </div>
+
+                                        <div className="h-px bg-slate-100"></div>
+
+                                        {/* QR Code Section (SECONDARY - Expandable) */}
+                                        <div className="text-center">
+                                            {!showPix ? (
+                                                <button
+                                                    onClick={() => setShowPix(true)}
+                                                    className="text-gov-blue-600 text-sm font-bold hover:underline flex items-center justify-center gap-2 w-full py-2"
+                                                >
+                                                    <QrCode className="h-4 w-4" />
+                                                    Mostrar QR Code (Imagem)
+                                                </button>
+                                            ) : (
+                                                <div className="animate-in slide-in-from-top-2 fade-in">
+                                                    <div className="bg-white p-2 rounded-xl border-2 border-slate-100 inline-block shadow-sm">
+                                                        <img
+                                                            src={`data:image/png;base64,${pixData.qr_code_base64}`}
+                                                            className="w-48 h-48 object-contain"
+                                                            alt="Pix QR Code"
+                                                        />
+                                                    </div>
+                                                    <button
+                                                        onClick={() => setShowPix(false)}
+                                                        className="text-slate-400 text-xs mt-2 hover:text-slate-600 block w-full"
+                                                    >
+                                                        Ocultar QR Code
+                                                    </button>
+                                                </div>
+                                            )}
+                                        </div>
+
+                                        <div className="bg-blue-50 p-4 rounded-xl flex items-start gap-3">
+                                            <div className="w-1.5 h-1.5 bg-blue-500 rounded-full mt-2 shrink-0 animate-pulse"></div>
+                                            <p className="text-xs text-blue-700 leading-relaxed">
+                                                Após o pagamento, você receberá a confirmação por e-mail e o cartão entrará em produção imediatamente.
+                                            </p>
+                                        </div>
+                                    </div>
+
+                                    {/* Modal Footer */}
+                                    <div className="p-4 border-t border-slate-100 bg-slate-50 shrink-0">
+                                        <button
+                                            onClick={() => setShowModal(false)}
+                                            className="w-full py-3 text-slate-600 font-bold hover:bg-slate-200 rounded-xl transition-colors"
+                                        >
+                                            Fechar e Aguardar
+                                        </button>
+                                    </div>
+                                </div>
+                            ) : (
+                                // Error State
+                                <div className="p-8 text-center">
+                                    <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                                        <Lock className="h-8 w-8 text-red-500" />
+                                    </div>
+                                    <h3 className="text-lg font-bold text-slate-800">Erro ao gerar</h3>
+                                    <p className="text-slate-500 text-sm mb-6">Não foi possível criar o pagamento agora.</p>
+                                    <button onClick={() => setShowModal(false)} className="px-6 py-2 bg-slate-900 text-white rounded-lg">Tentar Novamente</button>
+                                </div>
+                            )}
                         </div>
                     </div>
                 )}
