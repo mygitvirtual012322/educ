@@ -1,7 +1,7 @@
 "use client";
 
 import { GovHeader } from "@/components/GovHeader";
-import { Search, Filter, Download, Eye, MoreHorizontal, CheckCircle2, Clock, XCircle, RotateCcw } from "lucide-react";
+import { Search, Filter, Download, Eye, MoreHorizontal, CheckCircle2, Clock, XCircle, RotateCcw, Home, Users, CreditCard, Settings, PlusCircle, LogOut } from "lucide-react";
 import { useState, useEffect } from "react";
 import { Solicitation } from "@/lib/db";
 
@@ -56,6 +56,48 @@ export default function AdminPage() {
         }
     };
 
+    const createTestData = async () => {
+        setLoading(true);
+        const randomCPF = Math.floor(Math.random() * 10000000000).toString().padStart(11, '0');
+        const testData = {
+            cpf: randomCPF,
+            nome: "Usuário Teste " + Math.floor(Math.random() * 100),
+            email: "teste@exemplo.com",
+            nascimento: "01/01/2000",
+            nome_mae: "Mãe Teste",
+            status: "pendente",
+            valor: "24,90",
+            docs: {
+                rg: "https://via.placeholder.com/150",
+                comprovante: "https://via.placeholder.com/150"
+            }
+        };
+
+        try {
+            await fetch('/api/solicitations', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(testData)
+            });
+            await fetchData();
+            alert("Solicitação de teste criada com sucesso!");
+        } catch (error) {
+            console.error("Failed to create test data", error);
+            alert("Erro ao criar teste.");
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    // Calculate Stats
+    const totalSolicitacoes = solicitacoes.length;
+    const totalAprovados = solicitacoes.filter(s => s.status === 'aprovado').length;
+    const totalPendentes = solicitacoes.filter(s => s.status === 'analise' || s.status === 'pendente').length;
+    const totalReceita = solicitacoes.reduce((acc, curr) => {
+        const val = parseFloat(curr.valor?.replace('R$', '').replace(',', '.') || "0");
+        return acc + val;
+    }, 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+
     const getStatusColor = (status: string) => {
         switch (status) {
             case 'aprovado': return 'bg-green-100 text-green-700';
@@ -66,43 +108,108 @@ export default function AdminPage() {
     };
 
     return (
-        <div className="min-h-screen bg-slate-50 font-sans text-slate-900">
-            <header className="bg-white border-b border-slate-200">
-                <div className="container mx-auto px-6 py-4 flex justify-between items-center">
-                    <div className="flex items-center gap-2">
-                        <div className="w-8 h-8 bg-gov-blue-600 rounded-lg flex items-center justify-center text-white font-bold">A</div>
-                        <h1 className="font-bold text-lg text-slate-800">Painel Administrativo</h1>
-                    </div>
-                    <div className="flex items-center gap-6">
-                        <div className="flex items-center gap-2 px-3 py-1 bg-green-50 rounded-full border border-green-100">
-                            <span className="relative flex h-3 w-3">
-                                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
-                                <span className="relative inline-flex rounded-full h-3 w-3 bg-green-500"></span>
-                            </span>
-                            <span className="text-sm font-bold text-green-700">{onlineUsers} usuários online</span>
-                        </div>
-                        <div className="flex items-center gap-4">
-                            <div className="text-right">
-                                <p className="text-sm font-bold text-slate-700">Admin User</p>
-                                <p className="text-xs text-slate-500">Super Admin</p>
-                            </div>
-                            <div className="h-10 w-10 bg-slate-200 rounded-full flex items-center justify-center font-bold text-slate-500">AD</div>
-                        </div>
+        <div className="min-h-screen bg-slate-100 font-sans text-slate-900 flex">
+
+            {/* SIDEBAR */}
+            <aside className="w-64 bg-slate-900 text-slate-300 flex flex-col fixed h-full z-20 shadow-xl">
+                <div className="p-6 border-b border-slate-800 flex items-center gap-3">
+                    <div className="w-8 h-8 bg-gov-blue-600 rounded-lg flex items-center justify-center text-white font-bold shadow-lg shadow-blue-900/50">A</div>
+                    <div>
+                        <h1 className="font-bold text-white leading-tight">Painel Admin</h1>
+                        <p className="text-[10px] text-slate-500 uppercase tracking-wider">Governo Federal</p>
                     </div>
                 </div>
-            </header>
 
-            <main className="container mx-auto px-6 py-8">
-                <div className="flex justify-between items-end mb-6">
-                    <div>
-                        <h2 className="text-2xl font-bold text-slate-800 mb-1">Solicitações Recentes</h2>
-                        <p className="text-slate-500 text-sm">Gerencie os pedidos de cartão e documentação.</p>
+                <nav className="flex-1 p-4 space-y-2 overflow-y-auto">
+                    <div className="px-4 py-2 text-xs font-bold text-slate-500 uppercase tracking-wider">Principal</div>
+                    <a href="#" className="flex items-center gap-3 px-4 py-3 bg-gov-blue-600 text-white rounded-xl shadow-md transition-all font-medium">
+                        <Home className="h-5 w-5" /> Dashboard
+                    </a>
+                    <a href="#" className="flex items-center gap-3 px-4 py-3 hover:bg-slate-800 text-slate-400 hover:text-white rounded-xl transition-all font-medium">
+                        <Users className="h-5 w-5" /> Solicitações
+                    </a>
+                    <a href="#" className="flex items-center gap-3 px-4 py-3 hover:bg-slate-800 text-slate-400 hover:text-white rounded-xl transition-all font-medium">
+                        <CreditCard className="h-5 w-5" /> Financeiro
+                    </a>
+
+                    <div className="px-4 py-2 text-xs font-bold text-slate-500 uppercase tracking-wider mt-6">Sistema</div>
+                    <a href="#" className="flex items-center gap-3 px-4 py-3 hover:bg-slate-800 text-slate-400 hover:text-white rounded-xl transition-all font-medium">
+                        <Settings className="h-5 w-5" /> Configurações
+                    </a>
+                </nav>
+
+                <div className="p-4 border-t border-slate-800">
+                    <div className="bg-slate-800 rounded-xl p-4 mb-4">
+                        <div className="flex items-center gap-3 mb-2">
+                            <div className="bg-green-500/20 p-1.5 rounded-full">
+                                <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+                            </div>
+                            <span className="text-sm font-bold text-green-400">{onlineUsers} Online</span>
+                        </div>
+                        <p className="text-xs text-slate-500">Usuários ativos agora</p>
                     </div>
-                    <div className="flex gap-2">
-                        <button onClick={fetchData} className="bg-white border border-slate-200 text-slate-600 px-4 py-2 rounded-lg font-bold text-sm flex items-center gap-2 hover:bg-slate-50 transition-colors">
+                    <button className="flex items-center gap-3 px-4 py-3 hover:bg-slate-800 text-red-400 w-full rounded-xl transition-all font-medium text-sm">
+                        <LogOut className="h-5 w-5" /> Sair do Painel
+                    </button>
+                </div>
+            </aside>
+
+            {/* MAIN CONTENT */}
+            <main className="flex-1 ml-64 p-8 overflow-y-auto min-h-screen">
+
+                {/* Header Actions */}
+                <div className="flex justify-between items-center mb-8">
+                    <div>
+                        <h2 className="text-2xl font-bold text-slate-800">Visão Geral</h2>
+                        <p className="text-slate-500 text-sm">Bem-vindo de volta, Admin.</p>
+                    </div>
+                    <div className="flex gap-3">
+                        <button onClick={createTestData} className="bg-slate-800 text-white px-4 py-2.5 rounded-xl font-bold text-sm flex items-center gap-2 hover:bg-slate-700 transition-all shadow-lg shadow-slate-200">
+                            <PlusCircle className="h-4 w-4" />
+                            Criar Teste
+                        </button>
+                        <button onClick={fetchData} className="bg-white border border-slate-200 text-slate-600 px-4 py-2.5 rounded-xl font-bold text-sm flex items-center gap-2 hover:bg-slate-50 transition-colors">
                             <RotateCcw className="h-4 w-4" />
                             Atualizar
                         </button>
+                    </div>
+                </div>
+
+                {/* KPI Cards */}
+                <div className="grid grid-cols-4 gap-6 mb-8">
+                    <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm relative overflow-hidden">
+                        <div className="absolute top-0 right-0 p-4 opacity-10">
+                            <Users className="h-16 w-16 text-blue-600" />
+                        </div>
+                        <p className="text-sm font-bold text-slate-500 uppercase tracking-wider mb-1">Total Solicitações</p>
+                        <h3 className="text-3xl font-extrabold text-slate-800">{totalSolicitacoes}</h3>
+                        <p className="text-xs text-green-600 font-bold mt-2 flex items-center gap-1">
+                            <Clock className="h-3 w-3" /> Atualizado agora
+                        </p>
+                    </div>
+                    <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm relative overflow-hidden">
+                        <div className="absolute top-0 right-0 p-4 opacity-10">
+                            <CheckCircle2 className="h-16 w-16 text-green-600" />
+                        </div>
+                        <p className="text-sm font-bold text-slate-500 uppercase tracking-wider mb-1">Aprovados</p>
+                        <h3 className="text-3xl font-extrabold text-slate-800">{totalAprovados}</h3>
+                        <p className="text-xs text-slate-400 mt-2">Pagamento confirmado</p>
+                    </div>
+                    <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm relative overflow-hidden">
+                        <div className="absolute top-0 right-0 p-4 opacity-10">
+                            <Clock className="h-16 w-16 text-yellow-600" />
+                        </div>
+                        <p className="text-sm font-bold text-slate-500 uppercase tracking-wider mb-1">Pendentes</p>
+                        <h3 className="text-3xl font-extrabold text-slate-800">{totalPendentes}</h3>
+                        <p className="text-xs text-yellow-600 font-bold mt-2">Aguardando ação</p>
+                    </div>
+                    <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm relative overflow-hidden ring-4 ring-green-50">
+                        <div className="absolute top-0 right-0 p-4 opacity-10">
+                            <CreditCard className="h-16 w-16 text-green-600" />
+                        </div>
+                        <p className="text-sm font-bold text-slate-500 uppercase tracking-wider mb-1">Receita Estimada</p>
+                        <h3 className="text-3xl font-extrabold text-green-700">{totalReceita}</h3>
+                        <p className="text-xs text-green-600 font-bold mt-2">+3 novos hoje</p>
                     </div>
                 </div>
 
