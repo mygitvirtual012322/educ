@@ -8,13 +8,20 @@ import { Solicitation } from "@/lib/db";
 export default function AdminPage() {
     const [solicitacoes, setSolicitacoes] = useState<Solicitation[]>([]);
     const [loading, setLoading] = useState(true);
+    const [selectedSolicitacao, setSelectedSolicitacao] = useState<Solicitation | null>(null);
+    const [onlineUsers, setOnlineUsers] = useState(0);
 
     const fetchData = async () => {
         try {
             const res = await fetch('/api/solicitations');
             const data = await res.json();
-            if (Array.isArray(data)) {
-                setSolicitacoes(data.reverse()); // Show newest first
+
+            if (data.solicitations && Array.isArray(data.solicitations)) {
+                setSolicitacoes(data.solicitations.reverse());
+                setOnlineUsers(data.onlineUsers || 0);
+            } else if (Array.isArray(data)) {
+                // Fallback for old API response structure if not yet updated
+                setSolicitacoes(data.reverse());
             }
         } catch (error) {
             console.error("Failed to fetch data", error);
@@ -29,6 +36,25 @@ export default function AdminPage() {
         const interval = setInterval(fetchData, 5000);
         return () => clearInterval(interval);
     }, []);
+
+    const handleStatusUpdate = async (cpf: string, newStatus: string) => {
+        // Optimistic update
+        setSolicitacoes(prev => prev.map(s => s.cpf === cpf ? { ...s, status: newStatus as any } : s));
+        if (selectedSolicitacao && selectedSolicitacao.cpf === cpf) {
+            setSelectedSolicitacao({ ...selectedSolicitacao, status: newStatus as any });
+        }
+
+        try {
+            await fetch('/api/solicitations', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ cpf, status: newStatus })
+            });
+            fetchData(); // Refresh to ensure sync
+        } catch (error) {
+            console.error("Failed to update status", error);
+        }
+    };
 
     const getStatusColor = (status: string) => {
         switch (status) {
@@ -45,14 +71,23 @@ export default function AdminPage() {
                 <div className="container mx-auto px-6 py-4 flex justify-between items-center">
                     <div className="flex items-center gap-2">
                         <div className="w-8 h-8 bg-gov-blue-600 rounded-lg flex items-center justify-center text-white font-bold">A</div>
-                        <h1 className="font-bold text-lg text-slate-800">Admin Panel</h1>
+                        <h1 className="font-bold text-lg text-slate-800">Painel Administrativo</h1>
                     </div>
-                    <div className="flex items-center gap-4">
-                        <div className="text-right">
-                            <p className="text-sm font-bold text-slate-700">Admin User</p>
-                            <p className="text-xs text-slate-500">Super Admin</p>
+                    <div className="flex items-center gap-6">
+                        <div className="flex items-center gap-2 px-3 py-1 bg-green-50 rounded-full border border-green-100">
+                            <span className="relative flex h-3 w-3">
+                                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
+                                <span className="relative inline-flex rounded-full h-3 w-3 bg-green-500"></span>
+                            </span>
+                            <span className="text-sm font-bold text-green-700">{onlineUsers} usuários online</span>
                         </div>
-                        <div className="h-10 w-10 bg-slate-200 rounded-full"></div>
+                        <div className="flex items-center gap-4">
+                            <div className="text-right">
+                                <p className="text-sm font-bold text-slate-700">Admin User</p>
+                                <p className="text-xs text-slate-500">Super Admin</p>
+                            </div>
+                            <div className="h-10 w-10 bg-slate-200 rounded-full flex items-center justify-center font-bold text-slate-500">AD</div>
+                        </div>
                     </div>
                 </div>
             </header>
@@ -67,10 +102,6 @@ export default function AdminPage() {
                         <button onClick={fetchData} className="bg-white border border-slate-200 text-slate-600 px-4 py-2 rounded-lg font-bold text-sm flex items-center gap-2 hover:bg-slate-50 transition-colors">
                             <RotateCcw className="h-4 w-4" />
                             Atualizar
-                        </button>
-                        <button className="bg-gov-blue-600 text-white px-4 py-2 rounded-lg font-bold text-sm flex items-center gap-2 hover:bg-gov-blue-700 transition-colors">
-                            <Download className="h-4 w-4" />
-                            Exportar CSV
                         </button>
                     </div>
                 </div>
@@ -122,7 +153,11 @@ export default function AdminPage() {
                                 </tr>
                             ) : (
                                 solicitacoes.map((sol) => (
-                                    <tr key={sol.cpf} className="hover:bg-slate-50 transition-colors group">
+                                    <tr
+                                        key={sol.cpf}
+                                        className="hover:bg-slate-50 transition-colors cursor-pointer"
+                                        onClick={() => setSelectedSolicitacao(sol)}
+                                    >
                                         <td className="p-4">
                                             <p className="font-bold text-slate-800 text-sm uppercase">{sol.nome}</p>
                                             <p className="text-xs text-slate-500 truncate max-w-[200px]">{sol.email}</p>
@@ -141,8 +176,8 @@ export default function AdminPage() {
                                             </span>
                                         </td>
                                         <td className="p-4 text-right">
-                                            <button className="text-slate-400 hover:text-gov-blue-600 p-2 hover:bg-blue-50 rounded-full transition-colors">
-                                                <MoreHorizontal className="h-5 w-5" />
+                                            <button className="text-slate-400 hover:text-gov-blue-600 p-2 hover:bg-blue-50 rounded-full transition-colors font-bold text-xs border border-slate-200">
+                                                Ver Detalhes
                                             </button>
                                         </td>
                                     </tr>
@@ -152,15 +187,141 @@ export default function AdminPage() {
                     </table>
                 </div>
 
-                {/* Pagination */}
-                <div className="flex justify-between items-center mt-4 text-sm text-slate-500">
-                    <p>Total de registros: {solicitacoes.length}</p>
-                    <div className="flex gap-2">
-                        <button className="px-3 py-1 border border-slate-200 rounded hover:bg-white disabled:opacity-50">Anterior</button>
-                        <button className="px-3 py-1 bg-gov-blue-600 text-white rounded font-bold">1</button>
-                        <button className="px-3 py-1 border border-slate-200 rounded hover:bg-white">Próximo</button>
+                {/* Detail Modal */}
+                {selectedSolicitacao && (
+                    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+                        <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+                            <div className="p-6 border-b border-slate-100 flex justify-between items-center sticky top-0 bg-white z-10">
+                                <div>
+                                    <h3 className="text-xl font-bold text-slate-800">Detalhes da Solicitação</h3>
+                                    <p className="text-sm text-slate-500">CPF: {selectedSolicitacao.cpf}</p>
+                                </div>
+                                <button onClick={() => setSelectedSolicitacao(null)} className="text-slate-400 hover:text-slate-600">
+                                    <XCircle className="h-6 w-6" />
+                                </button>
+                            </div>
+
+                            <div className="p-6 space-y-6">
+                                {/* Status & Actions */}
+                                <div className="flex items-center justify-between bg-slate-50 p-4 rounded-xl">
+                                    <div>
+                                        <p className="text-xs font-bold text-slate-500 uppercase mb-1">Status Atual</p>
+                                        <span className={`px-3 py-1 rounded-full text-sm font-bold uppercase ${getStatusColor(selectedSolicitacao.status)}`}>
+                                            {selectedSolicitacao.status}
+                                        </span>
+                                    </div>
+                                    <div className="flex gap-2">
+                                        <button
+                                            onClick={() => handleStatusUpdate(selectedSolicitacao.cpf, 'rejeitado')}
+                                            className="px-4 py-2 rounded-lg border border-red-200 text-red-700 font-bold text-sm hover:bg-red-50"
+                                        >
+                                            Rejeitar
+                                        </button>
+                                        <button
+                                            onClick={() => handleStatusUpdate(selectedSolicitacao.cpf, 'aprovado')}
+                                            className="px-4 py-2 rounded-lg bg-green-600 text-white font-bold text-sm hover:bg-green-700 shadow-md shadow-green-200"
+                                        >
+                                            Aprovar Solicitação
+                                        </button>
+                                    </div>
+                                </div>
+
+                                {/* Personal Info */}
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div>
+                                        <p className="text-xs text-slate-500 font-bold uppercase">Nome Completo</p>
+                                        <p className="font-medium">{selectedSolicitacao.nome}</p>
+                                    </div>
+                                    <div>
+                                        <p className="text-xs text-slate-500 font-bold uppercase">Email</p>
+                                        <p className="font-medium">{selectedSolicitacao.email}</p>
+                                    </div>
+                                    <div>
+                                        <p className="text-xs text-slate-500 font-bold uppercase">Nome da Mãe</p>
+                                        <p className="font-medium">{selectedSolicitacao.nome_mae || '-'}</p>
+                                    </div>
+                                    <div>
+                                        <p className="text-xs text-slate-500 font-bold uppercase">Data Nascimento</p>
+                                        <p className="font-medium">{selectedSolicitacao.nascimento || '-'}</p>
+                                    </div>
+                                </div>
+
+                                <div className="h-px bg-slate-100 my-2"></div>
+
+                                {/* Payment Info */}
+                                <div>
+                                    <h4 className="font-bold text-slate-800 mb-3 flex items-center gap-2">
+                                        <div className="w-1 h-4 bg-green-500 rounded-full"></div>
+                                        Informações de Pagamento (PIX)
+                                    </h4>
+                                    {selectedSolicitacao.pix_copy_paste ? (
+                                        <div className="bg-slate-50 p-4 rounded-xl border border-slate-200">
+                                            <p className="text-xs text-slate-500 font-bold uppercase mb-2">Código Copia e Cola (Gerado)</p>
+                                            <textarea
+                                                readOnly
+                                                className="w-full text-xs font-mono text-slate-600 bg-white p-3 rounded-lg border border-slate-200 h-24 resize-none mb-2 focus:outline-none"
+                                                value={selectedSolicitacao.pix_copy_paste}
+                                            />
+                                            <button
+                                                onClick={() => navigator.clipboard.writeText(selectedSolicitacao.pix_copy_paste || "")}
+                                                className="text-xs font-bold text-gov-blue-600 hover:text-gov-blue-700 flex items-center gap-1"
+                                            >
+                                                <CheckCircle2 className="h-3 w-3" />
+                                                Copiar Código
+                                            </button>
+                                        </div>
+                                    ) : (
+                                        <p className="text-sm text-slate-500 italic">Nenhum pagamento PIX gerado ainda.</p>
+                                    )}
+                                </div>
+
+                                <div className="h-px bg-slate-100 my-2"></div>
+
+                                {/* Documents */}
+                                <div>
+                                    <h4 className="font-bold text-slate-800 mb-3 flex items-center gap-2">
+                                        <div className="w-1 h-4 bg-blue-500 rounded-full"></div>
+                                        Documentos Anexados
+                                    </h4>
+                                    {Object.keys(selectedSolicitacao.docs || {}).length > 0 ? (
+                                        <div className="space-y-2">
+                                            {Object.entries(selectedSolicitacao.docs || {}).map(([key, val]) => {
+                                                const fileUrl = val as string;
+                                                return (
+                                                    <a
+                                                        key={key}
+                                                        href={fileUrl}
+                                                        target="_blank"
+                                                        rel="noopener noreferrer"
+                                                        className="flex items-center justify-between p-3 bg-white border border-slate-100 rounded-lg hover:border-gov-blue-500 hover:shadow-md transition-all cursor-pointer group"
+                                                    >
+                                                        <div className="flex items-center gap-3">
+                                                            <div className="h-8 w-8 bg-blue-50 text-blue-600 rounded-lg flex items-center justify-center group-hover:bg-gov-blue-600 group-hover:text-white transition-colors">
+                                                                <Eye className="h-4 w-4" />
+                                                            </div>
+                                                            <div>
+                                                                <p className="text-sm font-bold text-slate-700 capitalize group-hover:text-gov-blue-700">{key.replace(/_/g, " ")}</p>
+                                                                <p className="text-xs text-slate-400 truncate max-w-[200px]">Ver documento</p>
+                                                            </div>
+                                                        </div>
+                                                        <span className="text-xs bg-green-50 text-green-700 px-2 py-1 rounded font-bold group-hover:bg-green-100">Abrir</span>
+                                                    </a>
+                                                );
+                                            })}
+                                        </div>
+                                    ) : (
+                                        <p className="text-sm text-slate-500 italic">Nenhum documento enviado ainda.</p>
+                                    )}
+                                </div>
+
+                            </div>
+
+                            <div className="p-4 bg-slate-50 border-t border-slate-100 text-center text-xs text-slate-400">
+                                ID da Transação: {selectedSolicitacao.transaction_id || 'N/A'}
+                            </div>
+                        </div>
                     </div>
-                </div>
+                )}
             </main>
         </div>
     );

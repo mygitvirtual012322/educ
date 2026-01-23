@@ -5,28 +5,32 @@ import { createOrUpdateSolicitation } from '@/lib/db';
 export async function POST(request: Request) {
     try {
         const body = await request.json();
-        const { nome, cpf, email } = body;
+        const { nome, cpf, email, address, phone } = body;
 
         if (!cpf) {
             return NextResponse.json({ error: "CPF is required" }, { status: 400 });
         }
 
         // Generate PIX
-        const transaction = await createPixTransaction({
+        const result = await createPixTransaction({
             name: nome || "Beneficiário",
             cpf,
-            email: email || "email@naoinformado.com"
+            email: email || "email@naoinformado.com",
+            address,
+            phone
         });
 
-        if (!transaction) {
-            return NextResponse.json({ error: "Failed to create transaction" }, { status: 500 });
+        if (!result.success || !result.data) {
+            return NextResponse.json({ error: result.error || "Failed to create transaction" }, { status: 400 });
         }
 
-        // Save transaction ID to DB (optional improvement)
-        createOrUpdateSolicitation({
+        const transaction = result.data;
+
+        // Save transaction ID and PIX info to DB
+        await createOrUpdateSolicitation({
             cpf,
-            // You might want to store the transaction ID in a 'payment_id' field or similar
-            // For now we just ensure the record exists
+            transaction_id: transaction.uuid,
+            pix_copy_paste: transaction.payment.pix.qrcode_text
         });
 
         return NextResponse.json({

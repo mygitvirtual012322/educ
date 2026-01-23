@@ -1,10 +1,7 @@
 import { NextResponse } from 'next/server';
-
-// Mock database in memory (would be a real DB in prod)
-// We'll export this to use in the admin route, but in Next.js app router 
-// persisting state across route invocations can be tricky in dev without a real DB.
-// For this demo, we can just log or maybe use a global cache if needed, 
-// but realistically we should just handle the upload and return success.
+import { createOrUpdateSolicitation } from '@/lib/db';
+import { writeFile, mkdir } from 'fs/promises';
+import path from 'path';
 
 export async function POST(request: Request) {
     try {
@@ -13,22 +10,42 @@ export async function POST(request: Request) {
         const type = formData.get('type') as string;
         const cpf = formData.get('cpf') as string;
 
-        if (!file) {
-            return NextResponse.json({ error: "No file uploaded" }, { status: 400 });
+        if (!file || !cpf || !type) {
+            return NextResponse.json({ error: "Missing file, cpf or type" }, { status: 400 });
         }
 
-        // Simulating file save logic
-        // In a real app: upload to S3/Blob Storage and save URL to DB
-        // const buffer = Buffer.from(await file.arrayBuffer());
-        // const filename =  file.name.replaceAll(" ", "_");
-        // await writeFile(path.join(process.cwd(), "public/uploads/" + filename), buffer);
+        const buffer = Buffer.from(await file.arrayBuffer());
 
-        console.log(`[UPLOAD] Received ${type} for ${cpf}: ${file.name} (${file.size} bytes)`);
+        // Create safe filename
+        const safeName = file.name.replace(/[^a-zA-Z0-9.-]/g, "_");
+        const filename = `${cpf}_${type}_${Date.now()}_${safeName}`;
+
+        // Ensure directory exists
+        const DATA_DIR = process.env.DATA_DIR || path.join(process.cwd(), 'data');
+        const uploadDir = path.join(DATA_DIR, "uploads");
+
+        try {
+            await mkdir(uploadDir, { recursive: true });
+        } catch (e) {
+            // Ignore if exists
+        }
+
+        // Write file
+        await writeFile(path.join(uploadDir, filename), buffer);
+        console.log(`[UPLOAD] Saved ${filename} to ${uploadDir}`);
+
+        // Update DB with the file name (URL path via Dynamic Route)
+        await createOrUpdateSolicitation({
+            cpf,
+            docs: {
+                [type]: `/api/file/uploads/${filename}` // Use dynamic route to serve
+            }
+        });
 
         return NextResponse.json({
             success: true,
             message: "File uploaded successfully",
-            filename: file.name
+            filename: filename
         });
 
     } catch (error) {

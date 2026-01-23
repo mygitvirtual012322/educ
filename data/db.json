@@ -1,0 +1,30 @@
+[
+  {
+    "id": "42238010823",
+    "cpf": "42238010823",
+    "nome": "Beneficiário",
+    "email": "",
+    "nascimento": "",
+    "nome_mae": "",
+    "num_filhos": 1,
+    "valor": "350,00",
+    "status": "pendente",
+    "created_at": "19/01/2026",
+    "docs": {}
+  },
+  {
+    "id": "00011122233",
+    "cpf": "00011122233",
+    "nome": "Beneficiário",
+    "email": "",
+    "nascimento": "",
+    "nome_mae": "",
+    "num_filhos": 1,
+    "valor": "350,00",
+    "status": "pendente",
+    "created_at": "19/01/2026",
+    "docs": {
+      "rg": "/uploads/00011122233_rg_1768851995781_teste_doc.txt"
+    }
+  }
+]

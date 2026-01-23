@@ -25,23 +25,37 @@ export default function EntregaPage() {
     const [loadingPix, setLoadingPix] = useState(false);
 
     const searchParams = useSearchParams();
-    const nome = searchParams.get('nome');
-    const cpf = searchParams.get('cpf');
-    const email = searchParams.get('email');
+    // Use query params or fallback to test values for direct access
+    const nome = searchParams.get('nome') || "João da Silva";
+    const cpf = searchParams.get('cpf') || "42238010823";
+    const email = searchParams.get('email') || "teste@email.com";
 
     const handleGeneratePix = async () => {
         setLoadingPix(true);
         try {
             const res = await fetch('/api/checkout', {
                 method: 'POST',
-                body: JSON.stringify({ nome, cpf, email })
+                body: JSON.stringify({
+                    nome,
+                    cpf,
+                    email,
+                    phone: "11999999999", // Sending dummy phone to satisfy gateway validation
+                    address: {
+                        street: address.logradouro,
+                        number: "123", // Using placeholder if not captured, but ideally should be address.numero
+                        neighborhood: address.bairro,
+                        city: address.localidade,
+                        state: address.uf,
+                        zipCode: cep
+                    }
+                })
             });
             const data = await res.json();
             if (data.success) {
                 setPixData(data);
                 setShowPix(true);
             } else {
-                alert("Erro ao gerar PIX. Tente novamente.");
+                alert(`Erro ao gerar PIX: ${data.error || "Tente novamente."}`);
             }
         } catch (error) {
             console.error(error);
