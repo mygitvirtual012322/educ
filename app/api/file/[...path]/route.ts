@@ -3,12 +3,18 @@ import fs from 'fs';
 import path from 'path';
 import mime from 'mime';
 
-export async function GET(request: NextRequest, { params }: { params: { path: string[] } }) {
+export async function GET(
+    request: NextRequest,
+    context: { params: Promise<{ path: string[] }> }
+) {
+    // Await params for Next.js 15+ compatibility
+    const { path: paramsPath } = await context.params;
+
     // Determine Data Directory (Same logic as db.ts)
     const DATA_DIR = process.env.DATA_DIR || path.join(process.cwd(), 'data');
 
     // safe join
-    const filePath = path.join(DATA_DIR, ...params.path);
+    const filePath = path.join(DATA_DIR, ...paramsPath);
 
     // Security Check: Ensure path is within DATA_DIR to prevent directory traversal
     const relative = path.relative(DATA_DIR, filePath);
