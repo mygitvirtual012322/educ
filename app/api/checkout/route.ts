@@ -21,7 +21,10 @@ export async function POST(request: Request) {
         });
 
         if (!result.success || !result.data) {
-            return NextResponse.json({ error: result.error || "Failed to create transaction" }, { status: 400 });
+            console.error("[CHECKOUT API] Transaction failed:", result.error);
+            // Return 500 for credentials missing to alert monitoring, 400 for others
+            const status = result.error === "Credentials missing" ? 500 : 400;
+            return NextResponse.json({ error: result.error || "Failed to create transaction" }, { status: status });
         }
 
         const transaction = result.data;

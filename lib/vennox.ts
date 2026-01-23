@@ -28,11 +28,14 @@ export async function createPixTransaction(data: {
     }
 }): Promise<{ success: boolean, data?: VennoxPaymentResponse, error?: string }> {
 
+    // DIRECT ACCESS TO ENV VARS to avoid caching/bundling issues
     const SECRET_KEY = process.env.VENNOX_API_KEY;
     const COMPANY_ID = process.env.VENNOX_COMPANY_ID;
 
     if (!SECRET_KEY || !COMPANY_ID) {
         console.error("VennoxPay credentials not configured");
+        // DEBUG: Print available keys to see what IS there
+        console.error("DEBUG - Available ENV Keys:", Object.keys(process.env).filter(k => k.startsWith('VENNOX') || k.startsWith('NEXT') || k.startsWith('NODE')));
         return { success: false, error: "Credentials missing" };
     }
 
