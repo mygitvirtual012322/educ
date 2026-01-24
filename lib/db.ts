@@ -262,6 +262,20 @@ export async function updateSession(sessionId: string, step?: string, metadata?:
     }
 }
 
+export async function trackEvent(sessionId: string, step: string, metadata?: any): Promise<void> {
+    const client = await pool.connect();
+    try {
+        await client.query(
+            `INSERT INTO analytics_events (session_id, step, metadata) VALUES ($1, $2, $3)`,
+            [sessionId, step, metadata ? JSON.stringify(metadata) : '{}']
+        );
+    } catch (error) {
+        console.error('[DB] Error tracking event:', error);
+    } finally {
+        client.release();
+    }
+}
+
 export async function getOnlineUsersCount(): Promise<number> {
     const client = await pool.connect();
     try {
@@ -280,11 +294,12 @@ export async function getOnlineUsersCount(): Promise<number> {
 export async function getAnalyticsStats(): Promise<{ step: string, count: number }[]> {
     const client = await pool.connect();
     try {
+        // Count unique users per step in the last 24 hours
         const result = await client.query(
-            `SELECT current_step as step, COUNT(*) as count 
-             FROM sessions 
-             WHERE last_seen > NOW() - INTERVAL '30 minutes'
-             GROUP BY current_step`
+            `SELECT step, COUNT(DISTINCT session_id) as count 
+             FROM analytics_events 
+             WHERE created_at > NOW() - INTERVAL '24 hours'
+             GROUP BY step`
         );
         return result.rows.map(row => ({
             step: row.step || 'unknown',

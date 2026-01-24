@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { updateSession } from '@/lib/db';
+import { updateSession, trackEvent } from '@/lib/db';
 
 export async function POST(request: Request) {
     try {
@@ -10,7 +10,11 @@ export async function POST(request: Request) {
         const ip = request.headers.get("x-forwarded-for") || "unknown_session";
         const sessionId = ip; // In a real app, use a cookie-based ID
 
+        // Update live status
         await updateSession(sessionId, step, metadata);
+
+        // Log historical event for funnel
+        await trackEvent(sessionId, step, metadata);
 
         return NextResponse.json({ success: true });
     } catch (error) {
