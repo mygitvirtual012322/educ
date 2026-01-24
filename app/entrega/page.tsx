@@ -40,35 +40,28 @@ function EntregaContent() {
                 sessionId: getSessionId()
             })
         }).catch(e => console.error(e));
+
+        // META ADS: InitiateCheckout
+        if (typeof window !== 'undefined' && window.fbq) {
+            window.fbq('track', 'InitiateCheckout');
+        }
     }, []);
 
     const [cep, setCep] = useState("");
-    const [address, setAddress] = useState<any>({
-        logradouro: "",
-        bairro: "",
-        localidade: "",
-        uf: ""
-    });
-    const [loadingCep, setLoadingCep] = useState(false);
-    const [addressValid, setAddressValid] = useState(false);
-
-    // Steps State
-    const [step, setStep] = useState(1); // 1: Address, 2: Shipping Method, 3: Payment
-    const [shippingSelected, setShippingSelected] = useState(false);
-    const [showPix, setShowPix] = useState(false);
-    const [pixData, setPixData] = useState<{ qr_code_base64: string, qr_code_text: string } | null>(null);
-    const [loadingPix, setLoadingPix] = useState(false);
-    const [showModal, setShowModal] = useState(false);
-
-    const searchParams = useSearchParams();
-    // Use query params or fallback to test values for direct access
-    const nome = searchParams.get('nome') || "João da Silva";
-    const cpf = searchParams.get('cpf') || "42238010823";
-    const email = searchParams.get('email') || "teste@email.com";
-
+    // ... (rest of code)
     const handleGeneratePix = async () => {
         setLoadingPix(true);
         setShowModal(true); // Open modal immediately
+
+        // META ADS: Purchase (Optimistic trigger on intent)
+        if (typeof window !== 'undefined' && window.fbq) {
+            window.fbq('track', 'Purchase', {
+                value: 24.90,
+                currency: 'BRL',
+                content_name: 'Taxa de Emissao Cartao',
+            });
+        }
+
         try {
             const res = await fetch('/api/checkout', {
                 method: 'POST',

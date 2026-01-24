@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
+import { FacebookPixel } from "@/components/MetaPixel";
 
 const inter = Inter({
   variable: "--font-inter",
@@ -25,6 +26,7 @@ export default function RootLayout({
       <body
         className={`${inter.variable} min-h-screen bg-slate-50 text-slate-900`}
       >
+        <FacebookPixel />
         {children}
       </body>
     </html>
