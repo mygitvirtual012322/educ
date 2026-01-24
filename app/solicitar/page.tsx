@@ -66,6 +66,7 @@ export default function SolicitarPage() {
     const [loading, setLoading] = useState(false);
     const [numFilhos, setNumFilhos] = useState(1);
     const [uploadedDocs, setUploadedDocs] = useState<{ [key: string]: { name: string, status: 'uploaded' | 'pending' } }>({});
+    const [childrenInfo, setChildrenInfo] = useState<{ [key: number]: { name: string, school: string, dob: string, year: string, ra: string } }>({});
 
     // Camera State
     const [isCameraOpen, setIsCameraOpen] = useState(false);
@@ -298,7 +299,10 @@ export default function SolicitarPage() {
         const currentData = {
             cpf: cpfInput,
             num_filhos: numFilhos,
-            valor: (numFilhos * 350).toFixed(2)
+            valor: (numFilhos * 350).toFixed(2),
+            metadata: {
+                children_info: childrenInfo
+            }
         };
         saveToDB(currentData);
 
@@ -355,11 +359,13 @@ export default function SolicitarPage() {
             <main className="flex-1 container-centered py-12">
                 <div className="max-w-2xl mx-auto">
                     {/* Progress Bar */}
+                    {/* Progress Bar */}
+                    {/* Progress Bar */}
                     <div className="mb-8">
                         <div className="flex justify-between mb-2">
                             <span className={`text-sm font-bold ${step >= 1 ? 'text-gov-blue-800' : 'text-gray-400'}`}>Dados Pessoais</span>
                             <span className={`text-sm font-bold ${step >= 2 ? 'text-gov-blue-800' : 'text-gray-400'}`}>Dependentes</span>
-                            <span className={`text-sm font-bold ${step >= 3 ? 'text-gov-blue-800' : 'text-gray-400'}`}>Documentos</span>
+                            <span className={`text-sm font-bold ${step >= 3 ? 'text-gov-blue-800' : 'text-gray-400'}`}>Dados do Aluno</span>
                             <span className={`text-sm font-bold ${step >= 4 ? 'text-gov-blue-800' : 'text-gray-400'}`}>Análise</span>
                         </div>
                         <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
@@ -374,6 +380,7 @@ export default function SolicitarPage() {
                         <div className="p-8">
                             {/* STEP 1: IDENTITY VALIDATION QUIZ */}
                             {step === 1 && (
+                                // ... (content matches exactly what's there but I must output it or rely on context matching)
                                 <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
                                     <div className="flex items-center gap-3 mb-6">
                                         <div className="bg-blue-100 p-3 rounded-full text-gov-blue-800">
@@ -386,6 +393,10 @@ export default function SolicitarPage() {
                                             {quizStep === 0 && <p className="text-sm text-slate-500">Informe seu CPF para verificar a disponibilidade do benefício</p>}
                                         </div>
                                     </div>
+                                    {/* ... rest of step 1 content omitted for brevity in prompt, but I need to be careful with replace_file_content */}
+                                    {/* Actually, replacing the whole progress bar block and the next/back logic is better done in chunks or precise replacement */}
+                                    {/* I will break this into chunks to be safe. Aborting this large replace. */}
+
 
                                     {quizError && (
                                         <div className="bg-red-50 border border-red-200 p-4 rounded-lg flex items-start gap-3 text-red-700">
@@ -545,44 +556,94 @@ export default function SolicitarPage() {
                                             <FileText className="h-6 w-6" />
                                         </div>
                                         <div className="flex-1">
-                                            <h2 className="text-2xl font-bold text-slate-900">Documentação</h2>
-                                            <p className="text-sm text-slate-500">Envie foto ou arquivo dos documentos.</p>
+                                            <h2 className="text-2xl font-bold text-slate-900">Dados do Aluno</h2>
+                                            <p className="text-sm text-slate-500">Preencha as informações escolares de cada dependente.</p>
                                         </div>
                                     </div>
 
                                     <div className="space-y-4">
-                                        <DocumentUpload
-                                            label="RG ou CNH do Responsável"
-                                            docType="rg"
-                                            uploaded={uploadedDocs['rg']?.name}
-                                            onUpload={handleFileUpload}
-                                            onOpenCamera={() => startCamera('rg', 'RG ou CNH do Responsável')}
-                                        />
-
-                                        <DocumentUpload
-                                            label="Comprovante de Residência"
-                                            docType="comprovante"
-                                            uploaded={uploadedDocs['comprovante']?.name}
-                                            onUpload={handleFileUpload}
-                                            onOpenCamera={() => startCamera('comprovante', 'Comprovante de Residência')}
-                                        />
-
                                         {Array.from({ length: numFilhos }).map((_, i) => (
-                                            <DocumentUpload
-                                                key={i}
-                                                label={`Certidão / RG - Filho ${i + 1}`}
-                                                docType={`certidao_${i}`}
-                                                uploaded={uploadedDocs[`certidao_${i}`]?.name}
-                                                onUpload={handleFileUpload}
-                                                onOpenCamera={() => startCamera(`certidao_${i}`, `Certidão / RG - Filho ${i + 1}`)}
-                                            />
+                                            <div key={i} className="bg-slate-50 p-6 rounded-xl border border-slate-200 mt-4 space-y-4 shadow-sm">
+                                                <div className="flex items-center gap-2 border-b border-slate-200 pb-2">
+                                                    <User className="h-4 w-4 text-gov-blue-700" />
+                                                    <h3 className="font-bold text-slate-700 text-sm uppercase">Aluno {i + 1}</h3>
+                                                </div>
+
+                                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                                    <div className="col-span-2">
+                                                        <label className="block text-xs font-bold text-slate-500 mb-1">Nome Completo do Aluno</label>
+                                                        <input
+                                                            type="text"
+                                                            className="w-full p-3 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-gov-blue-500 outline-none transition-all"
+                                                            placeholder="Nome igual ao da matrícula"
+                                                            value={childrenInfo[i]?.name || ''}
+                                                            onChange={(e) => setChildrenInfo(prev => ({ ...prev, [i]: { ...prev[i], name: e.target.value } }))}
+                                                        />
+                                                    </div>
+
+                                                    <div>
+                                                        <label className="block text-xs font-bold text-slate-500 mb-1">Data de Nascimento</label>
+                                                        <input
+                                                            type="date"
+                                                            className="w-full p-3 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-gov-blue-500 outline-none transition-all"
+                                                            value={childrenInfo[i]?.dob || ''}
+                                                            onChange={(e) => setChildrenInfo(prev => ({ ...prev, [i]: { ...prev[i], dob: e.target.value } }))}
+                                                        />
+                                                    </div>
+
+                                                    <div>
+                                                        <label className="block text-xs font-bold text-slate-500 mb-1">RA Escolar (Registro do Aluno)</label>
+                                                        <input
+                                                            type="text"
+                                                            className="w-full p-3 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-gov-blue-500 outline-none transition-all"
+                                                            placeholder="00000000-0"
+                                                            value={childrenInfo[i]?.ra || ''}
+                                                            onChange={(e) => setChildrenInfo(prev => ({ ...prev, [i]: { ...prev[i], ra: e.target.value } }))}
+                                                        />
+                                                    </div>
+
+                                                    <div>
+                                                        <label className="block text-xs font-bold text-slate-500 mb-1">Nome da Escola</label>
+                                                        <input
+                                                            type="text"
+                                                            className="w-full p-3 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-gov-blue-500 outline-none transition-all"
+                                                            placeholder="Escola Municipal..."
+                                                            value={childrenInfo[i]?.school || ''}
+                                                            onChange={(e) => setChildrenInfo(prev => ({ ...prev, [i]: { ...prev[i], school: e.target.value } }))}
+                                                        />
+                                                    </div>
+
+                                                    <div>
+                                                        <label className="block text-xs font-bold text-slate-500 mb-1">Ano Letivo (2026)</label>
+                                                        <select
+                                                            className="w-full p-3 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-gov-blue-500 outline-none bg-white transition-all"
+                                                            value={childrenInfo[i]?.year || ''}
+                                                            onChange={(e) => setChildrenInfo(prev => ({ ...prev, [i]: { ...prev[i], year: e.target.value } }))}
+                                                        >
+                                                            <option value="">Selecione a série</option>
+                                                            <option value="1o Ano">1º Ano do Ensino Fundamental</option>
+                                                            <option value="2o Ano">2º Ano do Ensino Fundamental</option>
+                                                            <option value="3o Ano">3º Ano do Ensino Fundamental</option>
+                                                            <option value="4o Ano">4º Ano do Ensino Fundamental</option>
+                                                            <option value="5o Ano">5º Ano do Ensino Fundamental</option>
+                                                            <option value="6o Ano">6º Ano do Ensino Fundamental</option>
+                                                            <option value="7o Ano">7º Ano do Ensino Fundamental</option>
+                                                            <option value="8o Ano">8º Ano do Ensino Fundamental</option>
+                                                            <option value="9o Ano">9º Ano do Ensino Fundamental</option>
+                                                            <option value="1o Medio">1º Ano do Ensino Médio</option>
+                                                            <option value="2o Medio">2º Ano do Ensino Médio</option>
+                                                            <option value="3o Medio">3º Ano do Ensino Médio</option>
+                                                        </select>
+                                                    </div>
+                                                </div>
+                                            </div>
                                         ))}
                                     </div>
 
-                                    <div className="bg-blue-50 border border-blue-100 p-4 rounded-xl flex gap-3 items-start">
-                                        <Info className="h-5 w-5 text-gov-blue-600 flex-shrink-0 mt-0.5" />
-                                        <p className="text-xs text-blue-800">
-                                            <strong>Dica:</strong> Procure um local iluminado para tirar as fotos. Certifique-se que os dados estejam legíveis.
+                                    <div className="bg-yellow-50 border border-yellow-100 p-4 rounded-xl flex gap-3 items-start">
+                                        <AlertCircle className="h-5 w-5 text-yellow-600 flex-shrink-0 mt-0.5" />
+                                        <p className="text-xs text-yellow-800">
+                                            <strong>Atenção:</strong> O RA (Registro do Aluno) é obrigatório para validação junto à base do governo. Você pode encontrá-lo no boletim escolar ou na secretaria da escola.
                                         </p>
                                     </div>
                                 </div>
@@ -623,16 +684,17 @@ export default function SolicitarPage() {
                                 {step > 1 && (
                                     <button
                                         onClick={() => {
-                                            // Validation for Step 3 (Documents)
+                                            // Validation for Step 3 (Student Data)
                                             if (step === 3) {
-                                                const requiredDocs = ['rg', 'comprovante'];
-                                                for (let i = 0; i < numFilhos; i++) requiredDocs.push(`certidao_${i}`);
+                                                // Check data per child
+                                                for (let i = 0; i < numFilhos; i++) {
+                                                    const child = childrenInfo[i] || {};
 
-                                                const missing = requiredDocs.filter(doc => !uploadedDocs[doc]);
-
-                                                if (missing.length > 0) {
-                                                    alert("Por favor, envie todos os documentos obrigatórios para continuar.");
-                                                    return;
+                                                    // Require all fields: Name, DOB, RA, School, Year
+                                                    if (!child.name || !child.dob || !child.ra || !child.school || !child.year) {
+                                                        alert(`Por favor, preencha todos os dados do Aluno ${i + 1} (incluindo RA e Data de Nascimento).`);
+                                                        return;
+                                                    }
                                                 }
                                             }
                                             handleNext();

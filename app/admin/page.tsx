@@ -14,9 +14,12 @@ export default function AdminPage() {
     const [activeSessions, setActiveSessions] = useState<any[]>([]);
     const [currentView, setCurrentView] = useState<'dashboard' | 'solicitations' | 'finance' | 'live-view'>('dashboard');
 
+    const [searchTerm, setSearchTerm] = useState("");
+    const [statusFilter, setStatusFilter] = useState<'all' | 'pendente' | 'analise' | 'aprovado' | 'rejeitado'>('all');
+
     const fetchData = async () => {
         try {
-            const res = await fetch('/api/solicitations');
+            const res = await fetch(`/api/solicitations?t=${Date.now()}`, { cache: 'no-store' });
             const data = await res.json();
 
             if (data.solicitations) {
@@ -108,14 +111,24 @@ export default function AdminPage() {
         }
     };
 
+    // Filter Logic
+    const filteredSolicitacoes = solicitacoes.filter(s => {
+        const matchesSearch = searchTerm === "" ||
+            s.nome?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            s.cpf?.includes(searchTerm) ||
+            s.email?.toLowerCase().includes(searchTerm.toLowerCase());
+
+        const matchesStatus = statusFilter === 'all' || s.status === statusFilter;
+
+        return matchesSearch && matchesStatus;
+    });
+
     // Calculate Stats
     const totalSolicitacoes = solicitacoes.length;
     const totalAprovados = solicitacoes.filter(s => s.status === 'aprovado').length;
     const totalPendentes = solicitacoes.filter(s => s.status === 'analise' || s.status === 'pendente').length;
-    const totalReceita = solicitacoes.reduce((acc, curr) => {
-        const val = parseFloat(curr.valor?.replace('R$', '').replace(',', '.') || "0");
-        return acc + val;
-    }, 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+    // Revenue is based on SHIPPING FEE (R$ 24,90) only for approved orders
+    const totalReceita = (totalAprovados * 24.90).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 
     // Funnel Stats
     const getStepCount = (step: string) => analytics.find(a => a.step === step)?.count || 0;
@@ -343,28 +356,53 @@ export default function AdminPage() {
                     </>
                 )}
 
-                {/* SOLICITATIONS LIST (Visible only in Solicitations or Dashboard if we want a summary, but lets keep specific) */}
+                {/* SOLICITATIONS LIST */}
                 {currentView !== 'dashboard' && (
                     <div className="mb-6">
-                        {/* Filters only show in List view */}
-                        <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm mb-6 flex gap-4">
-                            <div className="flex-1 relative">
+                        {/* Filters */}
+                        <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm mb-6 flex gap-4 flex-wrap">
+                            <div className="flex-1 relative min-w-[300px]">
                                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 h-5 w-5" />
                                 <input
-                                    placeholder="Buscar por nome, CPF ou protocolo..."
+                                    placeholder="Buscar por nome, CPF ou email..."
                                     className="w-full pl-10 pr-4 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-gov-blue-500 outline-none"
+                                    value={searchTerm}
+                                    onChange={(e) => setSearchTerm(e.target.value)}
                                 />
                             </div>
-                            <button className="px-4 py-2 border border-slate-200 rounded-lg flex items-center gap-2 text-slate-600 hover:bg-slate-50 font-medium">
-                                <Filter className="h-4 w-4" />
-                                Filtros
-                            </button>
+                            <div className="flex gap-2">
+                                <button
+                                    onClick={() => setStatusFilter('all')}
+                                    className={`px-4 py-2 border rounded-lg text-sm font-medium transition-colors ${statusFilter === 'all' ? 'bg-slate-800 text-white border-slate-800' : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'}`}
+                                >
+                                    Todos
+                                </button>
+                                <button
+                                    onClick={() => setStatusFilter('pendente')}
+                                    className={`px-4 py-2 border rounded-lg text-sm font-medium transition-colors ${statusFilter === 'pendente' ? 'bg-yellow-100 text-yellow-700 border-yellow-200' : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'}`}
+                                >
+                                    Pendentes
+                                </button>
+                                <button
+                                    onClick={() => setStatusFilter('aprovado')}
+                                    className={`px-4 py-2 border rounded-lg text-sm font-medium transition-colors ${statusFilter === 'aprovado' ? 'bg-green-100 text-green-700 border-green-200' : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'}`}
+                                >
+                                    Aprovados
+                                </button>
+                                <button
+                                    onClick={() => setStatusFilter('rejeitado')}
+                                    className={`px-4 py-2 border rounded-lg text-sm font-medium transition-colors ${statusFilter === 'rejeitado' ? 'bg-red-100 text-red-700 border-red-200' : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'}`}
+                                >
+                                    Rejeitados
+                                </button>
+                            </div>
                         </div>
                     </div>
                 )}
 
                 {/* VIEW SWITCHER */}
                 {currentView === 'live-view' ? (
+                    // ... (live view content remains same, just ensuring we don't break it)
                     <div className="space-y-6 animate-in fade-in slide-in-from-right-4">
                         <div className="bg-slate-900 rounded-2xl p-8 text-white shadow-xl relative overflow-hidden flex items-center justify-between">
                             <div className="relative z-10">
@@ -394,7 +432,6 @@ export default function AdminPage() {
                                     {activeSessions.length === 0 ? (
                                         <tr><td colSpan={5} className="p-8 text-center text-slate-500">Nenhum usuário ativo no momento.</td></tr>
                                     ) : (
-
                                         activeSessions.map((session, idx) => {
                                             const timeAgo = Math.floor((new Date().getTime() - new Date(session.last_seen).getTime()) / 1000 / 60);
                                             return (
@@ -469,7 +506,7 @@ export default function AdminPage() {
                                                 <td className="p-4 text-sm text-slate-600">{sol.created_at}</td>
                                                 <td className="p-4 font-bold text-slate-800">{sol.nome}</td>
                                                 <td className="p-4 text-xs font-mono text-slate-400">{sol.transaction_id || '---'}</td>
-                                                <td className="p-4 text-right font-bold text-green-700 opacity-100">{sol.valor}</td>
+                                                <td className="p-4 text-right font-bold text-green-700 opacity-100">R$ 24,90</td>
                                             </tr>
                                         ))
                                     )}
@@ -498,14 +535,14 @@ export default function AdminPage() {
                                             Carregando dados...
                                         </td>
                                     </tr>
-                                ) : solicitacoes.length === 0 ? (
+                                ) : filteredSolicitacoes.length === 0 ? (
                                     <tr>
                                         <td colSpan={7} className="p-8 text-center text-slate-500">
-                                            Nenhuma solicitação encontrada.
+                                            Nenhuma solicitação encontrada para os filtros aplicados.
                                         </td>
                                     </tr>
                                 ) : (
-                                    solicitacoes.map((sol) => (
+                                    filteredSolicitacoes.map((sol) => (
                                         <tr
                                             key={sol.cpf}
                                             className="hover:bg-slate-50 transition-colors cursor-pointer"
