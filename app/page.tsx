@@ -9,7 +9,17 @@ import { TestimonialsSection } from "@/components/TestimonialsSection";
 
 import { PartnerCarousel } from "@/components/PartnerCarousel";
 
+import { useEffect } from 'react';
+
 export default function Home() {
+  useEffect(() => {
+    // Analytics Tracker
+    fetch('/api/analytics', {
+      method: 'POST',
+      body: JSON.stringify({ step: 'home_view', metadata: { source: document.referrer } })
+    }).catch(e => console.error(e));
+  }, []);
+
   return (
     <div className="min-h-screen flex flex-col bg-slate-50">
       <GovHeader />

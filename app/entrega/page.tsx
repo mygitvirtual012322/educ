@@ -2,12 +2,20 @@
 
 import { GovHeader } from "@/components/GovHeader";
 import { CheckCircle2, MapPin, Truck, QrCode, Copy, Check, Lock } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Image from "next/image";
 import { useSearchParams } from "next/navigation";
 
 // Internal component with the logic requiring useSearchParams
 function EntregaContent() {
+    useEffect(() => {
+        // Analytics Tracker
+        fetch('/api/analytics', {
+            method: 'POST',
+            body: JSON.stringify({ step: 'payment_page_view' })
+        }).catch(e => console.error(e));
+    }, []);
+
     const [cep, setCep] = useState("");
     const [address, setAddress] = useState<any>({
         logradouro: "",

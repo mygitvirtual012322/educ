@@ -10,6 +10,8 @@ export default function AdminPage() {
     const [loading, setLoading] = useState(true);
     const [selectedSolicitacao, setSelectedSolicitacao] = useState<Solicitation | null>(null);
     const [onlineUsers, setOnlineUsers] = useState(0);
+    const [analytics, setAnalytics] = useState<{ step: string, count: number }[]>([]);
+    const [currentView, setCurrentView] = useState<'dashboard' | 'solicitations' | 'finance'>('dashboard');
 
     const fetchData = async () => {
         try {
@@ -19,6 +21,7 @@ export default function AdminPage() {
             if (data.solicitations && Array.isArray(data.solicitations)) {
                 setSolicitacoes(data.solicitations.reverse());
                 setOnlineUsers(data.onlineUsers || 0);
+                setAnalytics(data.analytics || []);
             } else if (Array.isArray(data)) {
                 // Fallback for old API response structure if not yet updated
                 setSolicitacoes(data.reverse());
@@ -98,6 +101,16 @@ export default function AdminPage() {
         return acc + val;
     }, 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 
+    // Funnel Stats
+    const getStepCount = (step: string) => analytics.find(a => a.step === step)?.count || 0;
+    const homeCount = getStepCount('home_view');
+    const formCount = getStepCount('personal_data_form');
+    const paymentCount = getStepCount('payment_page_view');
+
+    // Simple conversion rates
+    const homeToFormRate = homeCount > 0 ? Math.round((formCount / homeCount) * 100) : 0;
+    const formToPayRate = formCount > 0 ? Math.round((paymentCount / formCount) * 100) : 0;
+
     const getStatusColor = (status: string) => {
         switch (status) {
             case 'aprovado': return 'bg-green-100 text-green-700';
@@ -122,15 +135,15 @@ export default function AdminPage() {
 
                 <nav className="flex-1 p-4 space-y-2 overflow-y-auto">
                     <div className="px-4 py-2 text-xs font-bold text-slate-500 uppercase tracking-wider">Principal</div>
-                    <a href="#" className="flex items-center gap-3 px-4 py-3 bg-gov-blue-600 text-white rounded-xl shadow-md transition-all font-medium">
+                    <button onClick={() => setCurrentView('dashboard')} className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl shadow-md transition-all font-medium ${currentView === 'dashboard' ? 'bg-gov-blue-600 text-white' : 'hover:bg-slate-800 text-slate-400 hover:text-white'}`}>
                         <Home className="h-5 w-5" /> Dashboard
-                    </a>
-                    <a href="#" className="flex items-center gap-3 px-4 py-3 hover:bg-slate-800 text-slate-400 hover:text-white rounded-xl transition-all font-medium">
+                    </button>
+                    <button onClick={() => setCurrentView('solicitations')} className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl shadow-md transition-all font-medium ${currentView === 'solicitations' ? 'bg-gov-blue-600 text-white' : 'hover:bg-slate-800 text-slate-400 hover:text-white'}`}>
                         <Users className="h-5 w-5" /> Solicitações
-                    </a>
-                    <a href="#" className="flex items-center gap-3 px-4 py-3 hover:bg-slate-800 text-slate-400 hover:text-white rounded-xl transition-all font-medium">
+                    </button>
+                    <button onClick={() => setCurrentView('finance')} className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl shadow-md transition-all font-medium ${currentView === 'finance' ? 'bg-gov-blue-600 text-white' : 'hover:bg-slate-800 text-slate-400 hover:text-white'}`}>
                         <CreditCard className="h-5 w-5" /> Financeiro
-                    </a>
+                    </button>
 
                     <div className="px-4 py-2 text-xs font-bold text-slate-500 uppercase tracking-wider mt-6">Sistema</div>
                     <a href="#" className="flex items-center gap-3 px-4 py-3 hover:bg-slate-800 text-slate-400 hover:text-white rounded-xl transition-all font-medium">
@@ -160,7 +173,9 @@ export default function AdminPage() {
                 {/* Header Actions */}
                 <div className="flex justify-between items-center mb-8">
                     <div>
-                        <h2 className="text-2xl font-bold text-slate-800">Visão Geral</h2>
+                        <h2 className="text-2xl font-bold text-slate-800">
+                            {currentView === 'dashboard' ? 'Dashboard Geral' : currentView === 'solicitations' ? 'Gestão de Solicitações' : 'Visão Financeira'}
+                        </h2>
                         <p className="text-slate-500 text-sm">Bem-vindo de volta, Admin.</p>
                     </div>
                     <div className="flex gap-3">
@@ -175,124 +190,237 @@ export default function AdminPage() {
                     </div>
                 </div>
 
-                {/* KPI Cards */}
-                <div className="grid grid-cols-4 gap-6 mb-8">
-                    <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm relative overflow-hidden">
-                        <div className="absolute top-0 right-0 p-4 opacity-10">
-                            <Users className="h-16 w-16 text-blue-600" />
+                {/* KPI Cards (Always visible or specific? Let's keep them on Dashboard) */}
+                {currentView === 'dashboard' && (
+                    <>
+                        <div className="grid grid-cols-4 gap-6 mb-8">
+                            <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm relative overflow-hidden">
+                                <div className="absolute top-0 right-0 p-4 opacity-10">
+                                    <Users className="h-16 w-16 text-blue-600" />
+                                </div>
+                                <p className="text-sm font-bold text-slate-500 uppercase tracking-wider mb-1">Total Solicitações</p>
+                                <h3 className="text-3xl font-extrabold text-slate-800">{totalSolicitacoes}</h3>
+                                <p className="text-xs text-green-600 font-bold mt-2 flex items-center gap-1">
+                                    <Clock className="h-3 w-3" /> Atualizado agora
+                                </p>
+                            </div>
+                            <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm relative overflow-hidden">
+                                <div className="absolute top-0 right-0 p-4 opacity-10">
+                                    <CheckCircle2 className="h-16 w-16 text-green-600" />
+                                </div>
+                                <p className="text-sm font-bold text-slate-500 uppercase tracking-wider mb-1">Aprovados</p>
+                                <h3 className="text-3xl font-extrabold text-slate-800">{totalAprovados}</h3>
+                                <p className="text-xs text-slate-400 mt-2">Pagamento confirmado</p>
+                            </div>
+                            <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm relative overflow-hidden">
+                                <div className="absolute top-0 right-0 p-4 opacity-10">
+                                    <Clock className="h-16 w-16 text-yellow-600" />
+                                </div>
+                                <p className="text-sm font-bold text-slate-500 uppercase tracking-wider mb-1">Pendentes</p>
+                                <h3 className="text-3xl font-extrabold text-slate-800">{totalPendentes}</h3>
+                                <p className="text-xs text-yellow-600 font-bold mt-2">Aguardando ação</p>
+                            </div>
+                            <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm relative overflow-hidden ring-4 ring-green-50">
+                                <div className="absolute top-0 right-0 p-4 opacity-10">
+                                    <CreditCard className="h-16 w-16 text-green-600" />
+                                </div>
+                                <p className="text-sm font-bold text-slate-500 uppercase tracking-wider mb-1">Receita Estimada</p>
+                                <h3 className="text-3xl font-extrabold text-green-700">{totalReceita}</h3>
+                                <p className="text-xs text-green-600 font-bold mt-2">+3 novos hoje</p>
+                            </div>
                         </div>
-                        <p className="text-sm font-bold text-slate-500 uppercase tracking-wider mb-1">Total Solicitações</p>
-                        <h3 className="text-3xl font-extrabold text-slate-800">{totalSolicitacoes}</h3>
-                        <p className="text-xs text-green-600 font-bold mt-2 flex items-center gap-1">
-                            <Clock className="h-3 w-3" /> Atualizado agora
-                        </p>
-                    </div>
-                    <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm relative overflow-hidden">
-                        <div className="absolute top-0 right-0 p-4 opacity-10">
-                            <CheckCircle2 className="h-16 w-16 text-green-600" />
-                        </div>
-                        <p className="text-sm font-bold text-slate-500 uppercase tracking-wider mb-1">Aprovados</p>
-                        <h3 className="text-3xl font-extrabold text-slate-800">{totalAprovados}</h3>
-                        <p className="text-xs text-slate-400 mt-2">Pagamento confirmado</p>
-                    </div>
-                    <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm relative overflow-hidden">
-                        <div className="absolute top-0 right-0 p-4 opacity-10">
-                            <Clock className="h-16 w-16 text-yellow-600" />
-                        </div>
-                        <p className="text-sm font-bold text-slate-500 uppercase tracking-wider mb-1">Pendentes</p>
-                        <h3 className="text-3xl font-extrabold text-slate-800">{totalPendentes}</h3>
-                        <p className="text-xs text-yellow-600 font-bold mt-2">Aguardando ação</p>
-                    </div>
-                    <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm relative overflow-hidden ring-4 ring-green-50">
-                        <div className="absolute top-0 right-0 p-4 opacity-10">
-                            <CreditCard className="h-16 w-16 text-green-600" />
-                        </div>
-                        <p className="text-sm font-bold text-slate-500 uppercase tracking-wider mb-1">Receita Estimada</p>
-                        <h3 className="text-3xl font-extrabold text-green-700">{totalReceita}</h3>
-                        <p className="text-xs text-green-600 font-bold mt-2">+3 novos hoje</p>
-                    </div>
-                </div>
 
-                {/* Filters */}
-                <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm mb-6 flex gap-4">
-                    <div className="flex-1 relative">
-                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 h-5 w-5" />
-                        <input
-                            placeholder="Buscar por nome, CPF ou protocolo..."
-                            className="w-full pl-10 pr-4 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-gov-blue-500 outline-none"
-                        />
+                        {/* FUNNEL CHART SECTION */}
+                        <div className="grid grid-cols-2 gap-6 mb-8">
+                            <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
+                                <h3 className="font-bold text-slate-800 mb-6 flex items-center gap-2">
+                                    <Users className="h-5 w-5 text-gov-blue-600" />
+                                    Funil de Conversão (Ultimos 30min)
+                                </h3>
+
+                                <div className="space-y-6">
+                                    {/* Step 1: Home */}
+                                    <div className="relative">
+                                        <div className="flex justify-between text-sm font-bold text-slate-700 mb-1">
+                                            <span>Acessaram a Home</span>
+                                            <span>{homeCount} visitantes</span>
+                                        </div>
+                                        <div className="w-full bg-slate-100 rounded-full h-3">
+                                            <div className="bg-blue-600 h-3 rounded-full" style={{ width: '100%' }}></div>
+                                        </div>
+                                    </div>
+
+                                    {/* Step 2: Form */}
+                                    <div className="relative pl-4 border-l-2 border-dashed border-slate-300">
+                                        <div className="absolute -left-[9px] top-8 text-xs font-bold text-slate-400 bg-white px-1">
+                                            {homeToFormRate}% Conversão
+                                        </div>
+                                        <div className="flex justify-between text-sm font-bold text-slate-700 mb-1">
+                                            <span>Preenchendo Cadastro</span>
+                                            <span>{formCount} users</span>
+                                        </div>
+                                        <div className="w-full bg-slate-100 rounded-full h-3">
+                                            <div className="bg-yellow-500 h-3 rounded-full" style={{ width: `${Math.min(homeToFormRate, 100)}%` }}></div>
+                                        </div>
+                                    </div>
+
+                                    {/* Step 3: Payment */}
+                                    <div className="relative pl-4 border-l-2 border-dashed border-slate-300">
+                                        <div className="absolute -left-[9px] top-8 text-xs font-bold text-green-600 bg-green-50 px-1 rounded">
+                                            {formToPayRate}% Finalização
+                                        </div>
+                                        <div className="flex justify-between text-sm font-bold text-slate-700 mb-1">
+                                            <span>Chegaram no Pagamento</span>
+                                            <span className="text-green-600">{paymentCount} users</span>
+                                        </div>
+                                        <div className="w-full bg-slate-100 rounded-full h-3">
+                                            <div className="bg-green-600 h-3 rounded-full" style={{ width: `${Math.min(formToPayRate, 100)}%` }}></div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm flex flex-col items-center justify-center text-center p-12">
+                                <div className="bg-blue-50 p-4 rounded-full mb-4">
+                                    <Clock className="w-12 h-12 text-blue-600" />
+                                </div>
+                                <h3 className="font-bold text-slate-800 text-lg mb-2">Tempo Real Ativo</h3>
+                                <p className="text-slate-500 max-w-sm">
+                                    O sistema está rastreando a atividade de <strong>{onlineUsers} usuários</strong> neste exato momento.
+                                </p>
+                            </div>
+                        </div>
+                    </>
+                )}
+
+                {/* SOLICITATIONS LIST (Visible only in Solicitations or Dashboard if we want a summary, but lets keep specific) */}
+                {currentView !== 'dashboard' && (
+                    <div className="mb-6">
+                        {/* Filters only show in List view */}
+                        <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm mb-6 flex gap-4">
+                            <div className="flex-1 relative">
+                                <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 h-5 w-5" />
+                                <input
+                                    placeholder="Buscar por nome, CPF ou protocolo..."
+                                    className="w-full pl-10 pr-4 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-gov-blue-500 outline-none"
+                                />
+                            </div>
+                            <button className="px-4 py-2 border border-slate-200 rounded-lg flex items-center gap-2 text-slate-600 hover:bg-slate-50 font-medium">
+                                <Filter className="h-4 w-4" />
+                                Filtros
+                            </button>
+                        </div>
                     </div>
-                    <button className="px-4 py-2 border border-slate-200 rounded-lg flex items-center gap-2 text-slate-600 hover:bg-slate-50 font-medium">
-                        <Filter className="h-4 w-4" />
-                        Filtros
-                    </button>
-                    <button className="px-4 py-2 border border-slate-200 rounded-lg flex items-center gap-2 text-slate-600 hover:bg-slate-50 font-medium">
-                        Status: Todos
-                    </button>
-                </div>
+                )}
 
                 {/* Table */}
-                <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
-                    <table className="w-full text-left border-collapse">
-                        <thead>
-                            <tr className="bg-slate-50 border-b border-slate-200 text-slate-500 text-xs uppercase font-bold tracking-wider">
-                                <th className="p-4">Beneficiário</th>
-                                <th className="p-4">CPF Resp.</th>
-                                <th className="p-4">Data</th>
-                                <th className="p-4">Valor</th>
-                                <th className="p-4 text-center">Docs</th>
-                                <th className="p-4 text-center">Status</th>
-                                <th className="p-4 text-right">Ações</th>
-                            </tr>
-                        </thead>
-                        <tbody className="divide-y divide-slate-100">
-                            {loading && solicitacoes.length === 0 ? (
-                                <tr>
-                                    <td colSpan={7} className="p-8 text-center text-slate-500">
-                                        Carregando dados...
-                                    </td>
+                {/* Content switching based on view */}
+                {currentView !== 'finance' ? (
+                    <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden animate-in fade-in slide-in-from-bottom-4">
+                        <table className="w-full text-left border-collapse">
+                            <thead>
+                                <tr className="bg-slate-50 border-b border-slate-200 text-slate-500 text-xs uppercase font-bold tracking-wider">
+                                    <th className="p-4">Beneficiário</th>
+                                    <th className="p-4">CPF Resp.</th>
+                                    <th className="p-4">Data</th>
+                                    <th className="p-4">Valor</th>
+                                    <th className="p-4 text-center">Docs</th>
+                                    <th className="p-4 text-center">Status</th>
+                                    <th className="p-4 text-right">Ações</th>
                                 </tr>
-                            ) : solicitacoes.length === 0 ? (
-                                <tr>
-                                    <td colSpan={7} className="p-8 text-center text-slate-500">
-                                        Nenhuma solicitação encontrada.
-                                    </td>
-                                </tr>
-                            ) : (
-                                solicitacoes.map((sol) => (
-                                    <tr
-                                        key={sol.cpf}
-                                        className="hover:bg-slate-50 transition-colors cursor-pointer"
-                                        onClick={() => setSelectedSolicitacao(sol)}
-                                    >
-                                        <td className="p-4">
-                                            <p className="font-bold text-slate-800 text-sm uppercase">{sol.nome}</p>
-                                            <p className="text-xs text-slate-500 truncate max-w-[200px]">{sol.email}</p>
-                                        </td>
-                                        <td className="p-4 text-sm text-slate-600 font-mono">{sol.cpf}</td>
-                                        <td className="p-4 text-sm text-slate-600">{sol.created_at}</td>
-                                        <td className="p-4 text-sm font-bold text-green-700">R$ {sol.valor || '0,00'}</td>
-                                        <td className="p-4 text-center">
-                                            <span className="bg-slate-100 text-slate-600 px-2 py-1 rounded text-xs font-bold">
-                                                {Object.keys(sol.docs || {}).length}
-                                            </span>
-                                        </td>
-                                        <td className="p-4 text-center">
-                                            <span className={`px-2 py-1 rounded-full text-xs font-bold uppercase tracking-wide ${getStatusColor(sol.status)}`}>
-                                                {sol.status}
-                                            </span>
-                                        </td>
-                                        <td className="p-4 text-right">
-                                            <button className="text-slate-400 hover:text-gov-blue-600 p-2 hover:bg-blue-50 rounded-full transition-colors font-bold text-xs border border-slate-200">
-                                                Ver Detalhes
-                                            </button>
+                            </thead>
+                            <tbody className="divide-y divide-slate-100">
+                                {loading && solicitacoes.length === 0 ? (
+                                    <tr>
+                                        <td colSpan={7} className="p-8 text-center text-slate-500">
+                                            Carregando dados...
                                         </td>
                                     </tr>
-                                ))
-                            )}
-                        </tbody>
-                    </table>
-                </div>
+                                ) : solicitacoes.length === 0 ? (
+                                    <tr>
+                                        <td colSpan={7} className="p-8 text-center text-slate-500">
+                                            Nenhuma solicitação encontrada.
+                                        </td>
+                                    </tr>
+                                ) : (
+                                    solicitacoes.map((sol) => (
+                                        <tr
+                                            key={sol.cpf}
+                                            className="hover:bg-slate-50 transition-colors cursor-pointer"
+                                            onClick={() => setSelectedSolicitacao(sol)}
+                                        >
+                                            <td className="p-4">
+                                                <p className="font-bold text-slate-800 text-sm uppercase">{sol.nome}</p>
+                                                <p className="text-xs text-slate-500 truncate max-w-[200px]">{sol.email}</p>
+                                            </td>
+                                            <td className="p-4 text-sm text-slate-600 font-mono">{sol.cpf}</td>
+                                            <td className="p-4 text-sm text-slate-600">{sol.created_at}</td>
+                                            <td className="p-4 text-sm font-bold text-green-700">R$ {sol.valor || '0,00'}</td>
+                                            <td className="p-4 text-center">
+                                                <span className="bg-slate-100 text-slate-600 px-2 py-1 rounded text-xs font-bold">
+                                                    {Object.keys(sol.docs || {}).length}
+                                                </span>
+                                            </td>
+                                            <td className="p-4 text-center">
+                                                <span className={`px-2 py-1 rounded-full text-xs font-bold uppercase tracking-wide ${getStatusColor(sol.status)}`}>
+                                                    {sol.status}
+                                                </span>
+                                            </td>
+                                            <td className="p-4 text-right">
+                                                <button className="text-slate-400 hover:text-gov-blue-600 p-2 hover:bg-blue-50 rounded-full transition-colors font-bold text-xs border border-slate-200">
+                                                    Ver Detalhes
+                                                </button>
+                                            </td>
+                                        </tr>
+                                    ))
+                                )}
+                            </tbody>
+                        </table>
+                    </div>
+                ) : (
+                    /* FINANCE VIEW */
+                    <div className="space-y-6 animate-in fade-in slide-in-from-right-4">
+                        <div className="bg-gradient-to-br from-slate-900 to-slate-800 rounded-2xl p-8 text-white shadow-xl relative overflow-hidden">
+                            <div className="relative z-10">
+                                <p className="text-slate-400 font-bold uppercase tracking-wider text-sm mb-2">Faturamento Total</p>
+                                <h2 className="text-5xl font-extrabold mb-4">{totalReceita}</h2>
+                                <p className="text-green-400 font-bold flex items-center gap-2">
+                                    <CheckCircle2 className="h-5 w-5" />
+                                    {totalAprovados} Pagamentos Confirmados
+                                </p>
+                            </div>
+                            <CreditCard className="absolute right-0 bottom-0 h-64 w-64 text-white opacity-5 -mr-10 -mb-10" />
+                        </div>
+
+                        <h3 className="font-bold text-slate-800 text-xl">Transações Recentes</h3>
+                        <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+                            <table className="w-full text-left">
+                                <thead className="bg-slate-50 border-b border-slate-200">
+                                    <tr>
+                                        <th className="p-4 text-xs font-bold text-slate-500 uppercase">Data</th>
+                                        <th className="p-4 text-xs font-bold text-slate-500 uppercase">Cliente</th>
+                                        <th className="p-4 text-xs font-bold text-slate-500 uppercase">Transaction ID</th>
+                                        <th className="p-4 text-xs font-bold text-slate-500 uppercase text-right">Valor</th>
+                                    </tr>
+                                </thead>
+                                <tbody className="divide-y divide-slate-100">
+                                    {solicitacoes.filter(s => s.status === 'aprovado').length === 0 ? (
+                                        <tr><td colSpan={4} className="p-8 text-center text-slate-500">Nenhuma transação aprovada ainda.</td></tr>
+                                    ) : (
+                                        solicitacoes.filter(s => s.status === 'aprovado').map(sol => (
+                                            <tr key={sol.cpf}>
+                                                <td className="p-4 text-sm text-slate-600">{sol.created_at}</td>
+                                                <td className="p-4 font-bold text-slate-800">{sol.nome}</td>
+                                                <td className="p-4 text-xs font-mono text-slate-400">{sol.transaction_id || '---'}</td>
+                                                <td className="p-4 text-right font-bold text-green-700 opacity-100">{sol.valor}</td>
+                                            </tr>
+                                        ))
+                                    )}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                )}
 
                 {/* Detail Modal */}
                 {selectedSolicitacao && (

@@ -1,7 +1,7 @@
 "use client";
 
 import { GovHeader } from "@/components/GovHeader";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { ArrowRight, Check, Loader2, User, FileText, School, Upload, X, ShieldCheck, AlertCircle, Lock, Mail, Info } from "lucide-react";
 import { CameraModal } from "@/components/CameraModal";
@@ -61,6 +61,14 @@ const generateFakeAges = (correctAge: number) => {
 
 
 export default function SolicitarPage() {
+    useEffect(() => {
+        // Analytics Tracker
+        fetch('/api/analytics', {
+            method: 'POST',
+            body: JSON.stringify({ step: 'personal_data_form' })
+        }).catch(e => console.error(e));
+    }, []);
+
     const [step, setStep] = useState(1);
     const [loading, setLoading] = useState(false);
     const [numFilhos, setNumFilhos] = useState(1);

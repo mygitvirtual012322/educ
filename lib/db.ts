@@ -54,7 +54,9 @@ async function initDB() {
         await client.query(`
             CREATE TABLE IF NOT EXISTS sessions (
                 id VARCHAR(255) PRIMARY KEY,
-                last_seen TIMESTAMP NOT NULL
+                last_seen TIMESTAMP NOT NULL,
+                current_step VARCHAR(50),
+                metadata JSONB DEFAULT '{}'
             );
         `);
 
@@ -228,16 +230,26 @@ export async function updateSolicitationStatus(cpf: string, status: Solicitation
 }
 
 // Session (Online Users) Tracking
-export async function updateSession(sessionId: string): Promise<void> {
+export async function updateSession(sessionId: string, step?: string, metadata?: any): Promise<void> {
     const client = await pool.connect();
     try {
-        await client.query(
-            `INSERT INTO sessions (id, last_seen) 
-             VALUES ($1, NOW()) 
-             ON CONFLICT (id) 
-             DO UPDATE SET last_seen = NOW()`,
-            [sessionId]
-        );
+        let query = `
+            INSERT INTO sessions (id, last_seen, current_step, metadata) 
+            VALUES ($1, NOW(), $2, $3) 
+            ON CONFLICT (id) 
+            DO UPDATE SET last_seen = NOW()
+        `;
+
+        const params: any[] = [sessionId, step || null, metadata ? JSON.stringify(metadata) : '{}'];
+
+        if (step) {
+            query += `, current_step = $2`;
+        }
+        if (metadata) {
+            query += `, metadata = $3`;
+        }
+
+        await client.query(query, params);
 
         // Cleanup old sessions (>10 minutes)
         await client.query(
@@ -260,6 +272,27 @@ export async function getOnlineUsersCount(): Promise<number> {
     } catch (error) {
         console.error('[DB] Error counting online users:', error);
         return 0;
+    } finally {
+        client.release();
+    }
+}
+
+export async function getAnalyticsStats(): Promise<{ step: string, count: number }[]> {
+    const client = await pool.connect();
+    try {
+        const result = await client.query(
+            `SELECT current_step as step, COUNT(*) as count 
+             FROM sessions 
+             WHERE last_seen > NOW() - INTERVAL '30 minutes'
+             GROUP BY current_step`
+        );
+        return result.rows.map(row => ({
+            step: row.step || 'unknown',
+            count: parseInt(row.count, 10)
+        }));
+    } catch (error) {
+        console.error('[DB] Error fetching analytics:', error);
+        return [];
     } finally {
         client.release();
     }
