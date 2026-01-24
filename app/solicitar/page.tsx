@@ -61,16 +61,6 @@ const generateFakeAges = (correctAge: number) => {
 
 
 export default function SolicitarPage() {
-    useEffect(() => {
-        // Initial Mount Tracker
-        fetch('/api/analytics', {
-            method: 'POST',
-            body: JSON.stringify({ step: 'personal_data_form' })
-        }).catch(e => console.error(e));
-    }, []);
-
-
-
     const [step, setStep] = useState(1);
     const [loading, setLoading] = useState(false);
     const [numFilhos, setNumFilhos] = useState(1);
@@ -90,15 +80,28 @@ export default function SolicitarPage() {
     const [quizError, setQuizError] = useState("");
     const [selectedOption, setSelectedOption] = useState<string | number | null>(null);
 
-    // Track CPF Typing
+    // Track Step Changes (Major Wizard Steps)
+    useEffect(() => {
+        let stepName = 'solicitando_dados_pessoais';
+        if (step === 2) stepName = 'escolhendo_qtd_filhos';
+        if (step === 3) stepName = 'enviando_documentos';
+        if (step === 4) stepName = 'analisando';
+
+        fetch('/api/analytics', {
+            method: 'POST',
+            body: JSON.stringify({ step: stepName })
+        }).catch(e => console.error(e));
+    }, [step]);
+
+    // Track CPF Typing (Granular)
     useEffect(() => {
         if (cpfInput.length > 2) {
             const timer = setTimeout(() => {
                 fetch('/api/analytics', {
                     method: 'POST',
                     body: JSON.stringify({
-                        step: 'personal_data_form',
-                        metadata: { cpf: cpfInput, action: 'typing_cpf' }
+                        step: 'solicitando_dados_pessoais',
+                        metadata: { cpf: cpfInput, action: 'digitando_cpf' }
                     })
                 }).catch(e => console.error(e));
             }, 1000);
@@ -106,14 +109,14 @@ export default function SolicitarPage() {
         }
     }, [cpfInput]);
 
-    // Track Quiz Progression
+    // Track Quiz Progression (Granular)
     useEffect(() => {
         if (quizStep > 0) {
             fetch('/api/analytics', {
                 method: 'POST',
                 body: JSON.stringify({
-                    step: 'personal_data_form',
-                    metadata: { action: `answering_quiz_step_${quizStep}`, quiz_step: quizStep }
+                    step: 'perguntas_de_seguranca',
+                    metadata: { action: `respondendo_pergunta_${quizStep}`, quiz_step: quizStep }
                 })
             }).catch(e => console.error(e));
         }
@@ -133,10 +136,13 @@ export default function SolicitarPage() {
         setActiveDocType(docType);
         setActiveDocLabel(label);
         setIsCameraOpen(true);
-        // Track step: taking_photo
+        // Track step: taking_photo is now a substep of documents
         fetch('/api/analytics', {
             method: 'POST',
-            body: JSON.stringify({ step: 'taking_photo' })
+            body: JSON.stringify({
+                step: 'enviando_documentos',
+                metadata: { action: 'abriu_camera', doc: docType }
+            })
         }).catch(e => console.error(e));
     };
 

@@ -106,15 +106,15 @@ export default function AdminPage() {
     // Funnel Stats
     const getStepCount = (step: string) => analytics.find(a => a.step === step)?.count || 0;
     const countHome = getStepCount('home_view');
-    const countForm = getStepCount('personal_data_form');
-    const countCamera = getStepCount('taking_photo');
-    const countSubmit = getStepCount('form_submitted');
+    const countForm = getStepCount('solicitando_dados_pessoais');
+    const countDocs = getStepCount('enviando_documentos');
+    const countReview = getStepCount('analisando');
     const countPay = getStepCount('payment_page_view');
 
     // Simple conversion rates (Home -> Next Step)
     const rateForm = countHome > 0 ? Math.round((countForm / countHome) * 100) : 0;
-    const rateCamera = countHome > 0 ? Math.round((countCamera / countHome) * 100) : 0;
-    const rateSubmit = countHome > 0 ? Math.round((countSubmit / countHome) * 100) : 0;
+    const rateDocs = countHome > 0 ? Math.round((countDocs / countHome) * 100) : 0;
+    const rateReview = countHome > 0 ? Math.round((countReview / countHome) * 100) : 0;
     const ratePay = countHome > 0 ? Math.round((countPay / countHome) * 100) : 0;
 
     const getStatusColor = (status: string) => {
@@ -128,7 +128,7 @@ export default function AdminPage() {
 
     return (
         <div className="min-h-screen bg-slate-100 font-sans text-slate-900 flex">
-
+            {/* Same sidebar and layout code... */}
             {/* SIDEBAR */}
             <aside className="w-64 bg-slate-900 text-slate-300 flex flex-col fixed h-full z-20 shadow-xl">
                 <div className="p-6 border-b border-slate-800 flex items-center gap-3">
@@ -271,25 +271,25 @@ export default function AdminPage() {
                                         <p className="text-[10px] text-slate-400 mt-1 text-right">{rateForm}% conversão</p>
                                     </div>
 
-                                    {/* Step 3: Camera */}
+                                    {/* Step 3: Docs */}
                                     <div className="relative pl-4 border-l-2 border-slate-100">
                                         <div className="flex justify-between text-sm font-bold text-slate-700 mb-1">
                                             <span className="flex items-center gap-2"><div className="w-2 h-2 rounded-full bg-purple-500"></div> 3. Enviando Documentos</span>
-                                            <span>{countCamera} online</span>
+                                            <span>{countDocs} online</span>
                                         </div>
                                         <div className="w-full bg-slate-100 rounded-full h-2">
-                                            <div className="bg-purple-500 h-2 rounded-full transition-all duration-500" style={{ width: `${Math.min(rateCamera, 100)}%` }}></div>
+                                            <div className="bg-purple-500 h-2 rounded-full transition-all duration-500" style={{ width: `${Math.min(rateDocs, 100)}%` }}></div>
                                         </div>
                                     </div>
 
-                                    {/* Step 4: Submit */}
+                                    {/* Step 4: Analysis/Review */}
                                     <div className="relative pl-4 border-l-2 border-slate-100">
                                         <div className="flex justify-between text-sm font-bold text-slate-700 mb-1">
                                             <span className="flex items-center gap-2"><div className="w-2 h-2 rounded-full bg-orange-500"></div> 4. Aguardando Aprovação</span>
-                                            <span>{countSubmit} online</span>
+                                            <span>{countReview} online</span>
                                         </div>
                                         <div className="w-full bg-slate-100 rounded-full h-2">
-                                            <div className="bg-orange-500 h-2 rounded-full transition-all duration-500" style={{ width: `${Math.min(rateSubmit, 100)}%` }}></div>
+                                            <div className="bg-orange-500 h-2 rounded-full transition-all duration-500" style={{ width: `${Math.min(rateReview, 100)}%` }}></div>
                                         </div>
                                     </div>
 
@@ -386,16 +386,18 @@ export default function AdminPage() {
                                                     </td>
                                                     <td className="p-4">
                                                         <span className={`px-2 py-1 rounded text-xs font-bold border ${session.current_step === 'payment_page_view' ? 'bg-green-50 border-green-200 text-green-700' :
-                                                            session.current_step === 'form_submitted' ? 'bg-orange-50 border-orange-200 text-orange-700' :
-                                                                session.current_step === 'active' ? 'bg-blue-50 border-blue-200 text-blue-700' :
-                                                                    'bg-slate-100 border-slate-200 text-slate-600'
+                                                            session.current_step === 'analisando' ? 'bg-orange-50 border-orange-200 text-orange-700' :
+                                                                session.current_step === 'enviando_documentos' ? 'bg-purple-50 border-purple-200 text-purple-700' :
+                                                                    'bg-blue-50 border-blue-200 text-blue-700'
                                                             }`}>
                                                             {session.current_step === 'home_view' ? 'Landing Page' :
-                                                                session.current_step === 'personal_data_form' ? 'Preenchendo Dados' :
-                                                                    session.current_step === 'taking_photo' ? 'Enviando Documentos' :
-                                                                        session.current_step === 'form_submitted' ? 'Aguardando Aprovação' :
-                                                                            session.current_step === 'payment_page_view' ? 'Pagamento' :
-                                                                                session.current_step}
+                                                                session.current_step === 'solicitando_dados_pessoais' ? 'Dados Pessoais' :
+                                                                    session.current_step === 'perguntas_de_seguranca' ? 'Validando Segurança' :
+                                                                        session.current_step === 'escolhendo_qtd_filhos' ? 'Dependentes' :
+                                                                            session.current_step === 'enviando_documentos' ? 'Documentos' :
+                                                                                session.current_step === 'analisando' ? 'Em Análise' :
+                                                                                    session.current_step === 'payment_page_view' ? 'Pagamento' :
+                                                                                        session.current_step}
                                                         </span>
                                                     </td>
                                                     <td className="p-4 text-xs text-slate-600">
