@@ -29,7 +29,11 @@ const pool = new Pool({
 });
 
 // Initialize Database Tables
+let isInitialized = false;
+
 export async function initDB() {
+    if (isInitialized) return;
+
     const client = await pool.connect();
     try {
         // Create solicitations table
@@ -63,6 +67,18 @@ export async function initDB() {
                 metadata JSONB DEFAULT '{}'
             );
         `);
+
+        // Ensure analytics_events table exists
+        await client.query(`
+            CREATE TABLE IF NOT EXISTS analytics_events (
+                id SERIAL PRIMARY KEY,
+                session_id VARCHAR(255),
+                step VARCHAR(50),
+                metadata JSONB,
+                created_at TIMESTAMP DEFAULT NOW()
+            );
+        `);
+
         // Migration for existing table
         try {
             await client.query(`ALTER TABLE sessions ADD COLUMN IF NOT EXISTS ip VARCHAR(45)`);
@@ -70,6 +86,7 @@ export async function initDB() {
         } catch (e) { /* ignore if exists */ }
 
         console.log('[DB] Tables initialized successfully');
+        isInitialized = true;
     } catch (error) {
         console.error('[DB] Initialization error:', error);
     } finally {
@@ -80,6 +97,7 @@ export async function initDB() {
 // --- SOLICITATION FUNCTIONS ---
 
 export async function createOrUpdateSolicitation(data: Partial<Solicitation> & { cpf: string }): Promise<Solicitation | null> {
+    await initDB();
     const client = await pool.connect();
     const cleanCPF = data.cpf.replace(/\D/g, "");
 
@@ -166,6 +184,7 @@ export async function createOrUpdateSolicitation(data: Partial<Solicitation> & {
 }
 
 export async function getAllSolicitations(): Promise<Solicitation[]> {
+    await initDB();
     const client = await pool.connect();
     try {
         const res = await client.query('SELECT * FROM solicitations ORDER BY created_at DESC');
@@ -317,6 +336,7 @@ export async function getOnlineUsersCount(): Promise<number> {
 }
 
 export async function getAnalyticsStats(): Promise<{ step: string, count: number }[]> {
+    await initDB();
     const client = await pool.connect();
     try {
         // Count unique users per step in the last 24 hours

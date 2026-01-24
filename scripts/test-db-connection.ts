@@ -1,0 +1,1 @@
+import { getAllSolicitations } from '../lib/db'; async function main() { try { console.log('Testing DB connection...'); const res = await getAllSolicitations(); console.log('Success! Result count:', res.length); } catch (e) { console.error('Test failed:', e); } } main();
