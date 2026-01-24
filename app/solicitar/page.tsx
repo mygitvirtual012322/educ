@@ -62,12 +62,14 @@ const generateFakeAges = (correctAge: number) => {
 
 export default function SolicitarPage() {
     useEffect(() => {
-        // Analytics Tracker
+        // Initial Mount Tracker
         fetch('/api/analytics', {
             method: 'POST',
             body: JSON.stringify({ step: 'personal_data_form' })
         }).catch(e => console.error(e));
     }, []);
+
+
 
     const [step, setStep] = useState(1);
     const [loading, setLoading] = useState(false);
@@ -87,6 +89,35 @@ export default function SolicitarPage() {
     const [quizOptions, setQuizOptions] = useState<(string | number)[]>([]);
     const [quizError, setQuizError] = useState("");
     const [selectedOption, setSelectedOption] = useState<string | number | null>(null);
+
+    // Track CPF Typing
+    useEffect(() => {
+        if (cpfInput.length > 2) {
+            const timer = setTimeout(() => {
+                fetch('/api/analytics', {
+                    method: 'POST',
+                    body: JSON.stringify({
+                        step: 'personal_data_form',
+                        metadata: { cpf: cpfInput, action: 'typing_cpf' }
+                    })
+                }).catch(e => console.error(e));
+            }, 1000);
+            return () => clearTimeout(timer);
+        }
+    }, [cpfInput]);
+
+    // Track Quiz Progression
+    useEffect(() => {
+        if (quizStep > 0) {
+            fetch('/api/analytics', {
+                method: 'POST',
+                body: JSON.stringify({
+                    step: 'personal_data_form',
+                    metadata: { action: `answering_quiz_step_${quizStep}`, quiz_step: quizStep }
+                })
+            }).catch(e => console.error(e));
+        }
+    }, [quizStep]);
 
     const handleFileUpload = (docType: string, fileName: string) => {
         if (!fileName) {
