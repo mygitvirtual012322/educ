@@ -262,6 +262,24 @@ export async function updateSession(sessionId: string, step?: string, metadata?:
     }
 }
 
+export async function getActiveSessions(): Promise<any[]> {
+    const client = await pool.connect();
+    try {
+        const result = await client.query(
+            `SELECT id, current_step, last_seen, metadata 
+             FROM sessions 
+             WHERE last_seen > NOW() - INTERVAL '5 minutes'
+             ORDER BY last_seen DESC`
+        );
+        return result.rows;
+    } catch (error) {
+        console.error('[DB] Error fetching active sessions:', error);
+        return [];
+    } finally {
+        client.release();
+    }
+}
+
 export async function trackEvent(sessionId: string, step: string, metadata?: any): Promise<void> {
     const client = await pool.connect();
     try {

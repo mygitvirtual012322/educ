@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { getAllSolicitations, createOrUpdateSolicitation, updateSession, getOnlineUsersCount, getAnalyticsStats } from '@/lib/db';
+import { getAllSolicitations, createOrUpdateSolicitation, updateSession, getOnlineUsersCount, getAnalyticsStats, getActiveSessions } from '@/lib/db';
 
 export async function GET(request: Request) {
     try {
@@ -10,11 +10,13 @@ export async function GET(request: Request) {
         const solicitations = await getAllSolicitations();
         const onlineUsers = await getOnlineUsersCount();
         const analytics = await getAnalyticsStats();
+        const activeSessions = await getActiveSessions();
 
         return NextResponse.json({
             solicitations,
             onlineUsers,
-            analytics
+            analytics,
+            activeSessions
         });
     } catch (error) {
         console.error("API GET Error:", error);
