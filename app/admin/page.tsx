@@ -61,6 +61,20 @@ export default function AdminPage() {
         }
     };
 
+    const handleDelete = async (cpf: string) => {
+        if (!confirm("Tem certeza que deseja EXCLUIR permanentemente esta solicitação?")) return;
+
+        try {
+            await fetch(`/api/solicitations?cpf=${cpf}`, { method: 'DELETE' });
+            setSolicitacoes(prev => prev.filter(s => s.cpf !== cpf));
+            if (selectedSolicitacao?.cpf === cpf) setSelectedSolicitacao(null);
+            alert("Solicitação excluída.");
+        } catch (error) {
+            console.error("Erro ao excluir", error);
+            alert("Erro ao excluir.");
+        }
+    };
+
     const createTestData = async () => {
         setLoading(true);
         const randomCPF = Math.floor(Math.random() * 10000000000).toString().padStart(11, '0');
@@ -380,61 +394,46 @@ export default function AdminPage() {
                                     {activeSessions.length === 0 ? (
                                         <tr><td colSpan={5} className="p-8 text-center text-slate-500">Nenhum usuário ativo no momento.</td></tr>
                                     ) : (
-    const handleDelete = async (cpf: string) => {
-                                            if (!confirm("Tem certeza que deseja EXCLUIR permanentemente esta solicitação?")) return;
-
-                                            try {
-                                                await fetch(`/api/solicitations?cpf=${cpf}`, { method: 'DELETE' });
-                                                setSolicitacoes(prev => prev.filter(s => s.cpf !== cpf));
-                                                if (selectedSolicitacao?.cpf === cpf) setSelectedSolicitacao(null);
-                                                alert("Solicitação excluída.");
-                                            } catch (error) {
-                                                console.error("Erro ao excluir", error);
-                                                alert("Erro ao excluir.");
-                                            }
-                                        };
-
-    // ... (rest of render)
 
                                         activeSessions.map((session, idx) => {
                                             const timeAgo = Math.floor((new Date().getTime() - new Date(session.last_seen).getTime()) / 1000 / 60);
-                                    return (
-                                    <tr key={session.id || idx} className="hover:bg-slate-50 transition-colors">
-                                        <td className="p-4">
-                                            <div className="h-2.5 w-2.5 rounded-full bg-green-500 animate-pulse shadow-[0_0_8px_rgba(34,197,94,0.6)]"></div>
-                                        </td>
-                                        <td className="p-4 font-mono text-xs text-slate-500">
-                                            <div className="font-bold text-slate-700">{session.ip || 'IP Oculto'}</div>
-                                            <div className="text-[10px] text-slate-400">ID: {session.id?.substring(0, 8)}...</div>
-                                        </td>
-                                        <td className="p-4">
-                                            {session.location ? (
-                                                <div className="flex items-center gap-1 text-xs font-bold text-slate-700">
-                                                    <Globe className="h-3 w-3 text-blue-500" />
-                                                    {session.location}
-                                                </div>
-                                            ) : (
-                                                <span className="text-xs text-slate-400 italic">Desconhecido</span>
-                                            )}
-                                            <div className={`mt-1 inline-block px-2 py-0.5 rounded text-[10px] font-bold border ${session.current_step === 'payment_page_view' ? 'bg-green-50 border-green-200 text-green-700' :
-                                                'bg-slate-100 border-slate-200 text-slate-500'}`}>
-                                                {session.current_step}
-                                            </div>
-                                        </td>
-                                        <td className="p-4 text-xs text-slate-600">
-                                            {/* ... */}
+                                            return (
+                                                <tr key={session.id || idx} className="hover:bg-slate-50 transition-colors">
+                                                    <td className="p-4">
+                                                        <div className="h-2.5 w-2.5 rounded-full bg-green-500 animate-pulse shadow-[0_0_8px_rgba(34,197,94,0.6)]"></div>
+                                                    </td>
+                                                    <td className="p-4 font-mono text-xs text-slate-500">
+                                                        <div className="font-bold text-slate-700">{session.ip || 'IP Oculto'}</div>
+                                                        <div className="text-[10px] text-slate-400">ID: {session.id?.substring(0, 8)}...</div>
+                                                    </td>
+                                                    <td className="p-4">
+                                                        {session.location ? (
+                                                            <div className="flex items-center gap-1 text-xs font-bold text-slate-700">
+                                                                <Globe className="h-3 w-3 text-blue-500" />
+                                                                {session.location}
+                                                            </div>
+                                                        ) : (
+                                                            <span className="text-xs text-slate-400 italic">Desconhecido</span>
+                                                        )}
+                                                        <div className={`mt-1 inline-block px-2 py-0.5 rounded text-[10px] font-bold border ${session.current_step === 'payment_page_view' ? 'bg-green-50 border-green-200 text-green-700' :
+                                                            'bg-slate-100 border-slate-200 text-slate-500'}`}>
+                                                            {session.current_step}
+                                                        </div>
+                                                    </td>
+                                                    <td className="p-4 text-xs text-slate-600">
+                                                        {/* ... */}
 
 // ... (In Solicitations Table)
-                                            <td className="p-4 text-right flex justify-end gap-2">
-                                                <button onClick={(e) => { e.stopPropagation(); handleDelete(sol.cpf); }} className="text-red-400 hover:text-red-600 p-2 hover:bg-red-50 rounded-full transition-colors" title="Excluir">
-                                                    <Trash2 className="h-4 w-4" />
-                                                </button>
-                                                <button className="text-slate-400 hover:text-gov-blue-600 p-2 hover:bg-blue-50 rounded-full transition-colors font-bold text-xs border border-slate-200">
-                                                    Ver
-                                                </button>
-                                            </td>
-                                        </tbody>
-                                    </table>
+                                                        <td className="p-4 text-right flex justify-end gap-2">
+                                                            <button onClick={(e) => { e.stopPropagation(); handleDelete(sol.cpf); }} className="text-red-400 hover:text-red-600 p-2 hover:bg-red-50 rounded-full transition-colors" title="Excluir">
+                                                                <Trash2 className="h-4 w-4" />
+                                                            </button>
+                                                            <button className="text-slate-400 hover:text-gov-blue-600 p-2 hover:bg-blue-50 rounded-full transition-colors font-bold text-xs border border-slate-200">
+                                                                Ver
+                                                            </button>
+                                                        </td>
+                                                    </tbody>
+                                                </table>
                                 </div>
                 )}
 
