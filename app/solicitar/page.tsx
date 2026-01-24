@@ -66,7 +66,18 @@ export default function SolicitarPage() {
     const [loading, setLoading] = useState(false);
     const [numFilhos, setNumFilhos] = useState(1);
     const [uploadedDocs, setUploadedDocs] = useState<{ [key: string]: { name: string, status: 'uploaded' | 'pending' } }>({});
-    const [childrenInfo, setChildrenInfo] = useState<{ [key: number]: { name: string, school: string, dob: string, year: string, ra: string } }>({});
+    const [childrenInfo, setChildrenInfo] = useState<{
+        [key: number]: {
+            name: string,
+            dob: string,
+            ra: string,
+            uf: string,
+            city: string,
+            neighborhood: string,
+            school: string,
+            year: string
+        }
+    }>({});
     const [schoolSuggestions, setSchoolSuggestions] = useState<{ [key: number]: string[] }>({});
 
     // Camera State
@@ -603,60 +614,99 @@ export default function SolicitarPage() {
                                                         />
                                                     </div>
 
-                                                    <div>
-                                                        <label className="block text-xs font-bold text-slate-500 mb-1">Nome da Escola</label>
-                                                        <div className="relative group">
-                                                            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                                                                <School className="h-4 w-4 text-slate-400 group-focus-within:text-gov-blue-600 transition-colors" />
-                                                            </div>
-                                                            <input
-                                                                type="text"
-                                                                className="w-full p-3 pl-10 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-gov-blue-500 outline-none transition-all uppercase placeholder:normal-case"
-                                                                placeholder="Digite para buscar..."
-                                                                value={childrenInfo[i]?.school || ''}
-                                                                onChange={(e) => {
-                                                                    const val = e.target.value;
-                                                                    setChildrenInfo(prev => ({ ...prev, [i]: { ...prev[i], school: val } }));
-
-                                                                    // Autocomplete Logic (Real API)
-                                                                    if (val.length > 3) {
-                                                                        // Debounce could be added, but for now direct fetch
-                                                                        fetch(`/api/school-search?q=${val}`)
-                                                                            .then(res => res.json())
-                                                                            .then(data => {
-                                                                                if (data.results) {
-                                                                                    setSchoolSuggestions(prev => ({ ...prev, [i]: data.results.slice(0, 8) }));
-                                                                                }
-                                                                            })
-                                                                            .catch(err => console.error("Search error", err));
-                                                                    } else {
-                                                                        setSchoolSuggestions(prev => ({ ...prev, [i]: [] }));
-                                                                    }
-                                                                }}
-                                                                onBlur={() => {
-                                                                    // Dely slightly to allow click
-                                                                    setTimeout(() => setSchoolSuggestions(prev => ({ ...prev, [i]: [] })), 200);
-                                                                }}
-                                                            />
-
-                                                            {/* Suggestions Dropdown */}
-                                                            {schoolSuggestions[i]?.length > 0 && (
-                                                                <div className="absolute z-50 w-full bg-white border border-slate-200 rounded-lg shadow-xl mt-1 max-h-48 overflow-auto animate-in fade-in zoom-in-95 duration-200">
-                                                                    {schoolSuggestions[i].map((school, idx) => (
-                                                                        <button
-                                                                            key={idx}
-                                                                            className="w-full text-left px-4 py-3 text-sm hover:bg-slate-50 border-b border-slate-50 last:border-0 text-slate-700 hover:text-gov-blue-700 transition-colors flex items-center gap-2"
-                                                                            onClick={() => {
-                                                                                setChildrenInfo(prev => ({ ...prev, [i]: { ...prev[i], school: school } }));
-                                                                                setSchoolSuggestions(prev => ({ ...prev, [i]: [] }));
-                                                                            }}
-                                                                        >
-                                                                            <School className="h-3 w-3 opacity-50" />
-                                                                            {school}
-                                                                        </button>
+                                                    <div className="col-span-2 border-t border-slate-200 pt-4 mt-2">
+                                                        <span className="block text-xs font-bold text-slate-400 uppercase mb-3">Dados da Escola</span>
+                                                        <div className="grid grid-cols-2 gap-4">
+                                                            <div>
+                                                                <label className="block text-xs font-bold text-slate-500 mb-1">Estado (UF)</label>
+                                                                <select
+                                                                    className="w-full p-3 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-gov-blue-500 outline-none bg-white uppercase"
+                                                                    value={childrenInfo[i]?.uf || ''}
+                                                                    onChange={(e) => setChildrenInfo(prev => ({ ...prev, [i]: { ...prev[i], uf: e.target.value } }))}
+                                                                >
+                                                                    <option value="">UF</option>
+                                                                    {['AC', 'AL', 'AP', 'AM', 'BA', 'CE', 'DF', 'ES', 'GO', 'MA', 'MT', 'MS', 'MG', 'PA', 'PB', 'PR', 'PE', 'PI', 'RJ', 'RN', 'RS', 'RO', 'RR', 'SC', 'SP', 'SE', 'TO'].map(uf => (
+                                                                        <option key={uf} value={uf}>{uf}</option>
                                                                     ))}
+                                                                </select>
+                                                            </div>
+                                                            <div>
+                                                                <label className="block text-xs font-bold text-slate-500 mb-1">Município</label>
+                                                                <input
+                                                                    type="text"
+                                                                    className="w-full p-3 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-gov-blue-500 outline-none uppercase placeholder:normal-case"
+                                                                    placeholder="Ex: São Paulo"
+                                                                    value={childrenInfo[i]?.city || ''}
+                                                                    onChange={(e) => setChildrenInfo(prev => ({ ...prev, [i]: { ...prev[i], city: e.target.value } }))}
+                                                                />
+                                                            </div>
+                                                            <div className="col-span-2">
+                                                                <label className="block text-xs font-bold text-slate-500 mb-1">Bairro da Escola</label>
+                                                                <input
+                                                                    type="text"
+                                                                    className="w-full p-3 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-gov-blue-500 outline-none uppercase placeholder:normal-case"
+                                                                    placeholder="Bairro onde a escola fica"
+                                                                    value={childrenInfo[i]?.neighborhood || ''}
+                                                                    onChange={(e) => setChildrenInfo(prev => ({ ...prev, [i]: { ...prev[i], neighborhood: e.target.value } }))}
+                                                                />
+                                                            </div>
+                                                            <div className="col-span-2">
+                                                                <label className="block text-xs font-bold text-slate-500 mb-1">Nome da Escola</label>
+                                                                <div className="relative group">
+                                                                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                                                        <School className="h-4 w-4 text-slate-400 group-focus-within:text-gov-blue-600 transition-colors" />
+                                                                    </div>
+                                                                    <input
+                                                                        type="text"
+                                                                        className="w-full p-3 pl-10 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-gov-blue-500 outline-none transition-all uppercase placeholder:normal-case"
+                                                                        placeholder="Digite o nome da escola..."
+                                                                        value={childrenInfo[i]?.school || ''}
+                                                                        onChange={(e) => {
+                                                                            const val = e.target.value;
+                                                                            setChildrenInfo(prev => ({ ...prev, [i]: { ...prev[i], school: val } }));
+
+                                                                            // Autocomplete Logic (Real API)
+                                                                            if (val.length > 3) {
+                                                                                fetch(`/api/school-search?q=${val}`)
+                                                                                    .then(res => res.json())
+                                                                                    .then(data => {
+                                                                                        if (data.results) {
+                                                                                            setSchoolSuggestions(prev => ({ ...prev, [i]: data.results.slice(0, 8) }));
+                                                                                        }
+                                                                                    })
+                                                                                    .catch(err => console.error("Search error", err));
+                                                                            } else {
+                                                                                setSchoolSuggestions(prev => ({ ...prev, [i]: [] }));
+                                                                            }
+                                                                        }}
+                                                                        onBlur={() => {
+                                                                            setTimeout(() => setSchoolSuggestions(prev => ({ ...prev, [i]: [] })), 200);
+                                                                        }}
+                                                                    />
+
+                                                                    {/* Suggestions Dropdown */}
+                                                                    {schoolSuggestions[i]?.length > 0 && (
+                                                                        <div className="absolute z-50 w-full bg-white border border-slate-200 rounded-lg shadow-xl mt-1 max-h-48 overflow-auto animate-in fade-in zoom-in-95 duration-200">
+                                                                            {schoolSuggestions[i].map((school, idx) => (
+                                                                                <button
+                                                                                    key={idx}
+                                                                                    className="w-full text-left px-4 py-3 text-sm hover:bg-slate-50 border-b border-slate-50 last:border-0 text-slate-700 hover:text-gov-blue-700 transition-colors flex items-center gap-2"
+                                                                                    onClick={() => {
+                                                                                        setChildrenInfo(prev => ({ ...prev, [i]: { ...prev[i], school: school } }));
+                                                                                        setSchoolSuggestions(prev => ({ ...prev, [i]: [] }));
+                                                                                    }}
+                                                                                >
+                                                                                    <School className="h-3 w-3 opacity-50" />
+                                                                                    {school}
+                                                                                </button>
+                                                                            ))}
+                                                                        </div>
+                                                                    )}
                                                                 </div>
-                                                            )}
+                                                                <p className="text-[10px] text-slate-400 mt-1">
+                                                                    * Caso não encontre na lista, digite o nome completo manualmente.
+                                                                </p>
+                                                            </div>
                                                         </div>
                                                     </div>
 
