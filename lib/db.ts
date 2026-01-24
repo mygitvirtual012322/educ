@@ -19,6 +19,7 @@ export interface Solicitation {
         comprovante?: string;
         [key: string]: string | undefined;
     };
+    metadata?: any;
 }
 
 // PostgreSQL Connection Pool
@@ -46,7 +47,8 @@ async function initDB() {
                 created_at VARCHAR(20),
                 transaction_id VARCHAR(255),
                 pix_copy_paste TEXT,
-                docs JSONB DEFAULT '{}'
+                docs JSONB DEFAULT '{}',
+                metadata JSONB DEFAULT '{}'
             );
         `);
 
@@ -168,6 +170,10 @@ export async function createOrUpdateSolicitation(data: Partial<Solicitation> & {
                     updates.push(`docs = $${paramIndex++}`);
                     values.push(JSON.stringify(mergedDocs));
                 }
+                if (data.metadata) {
+                    updates.push(`metadata = $${paramIndex++}`);
+                    values.push(JSON.stringify(data.metadata));
+                }
 
                 if (updates.length > 0) {
                     values.push(cleanCPF);
@@ -179,8 +185,8 @@ export async function createOrUpdateSolicitation(data: Partial<Solicitation> & {
             } else {
                 // Create
                 await client.query(
-                    `INSERT INTO solicitations (id, cpf, nome, email, nascimento, nome_mae, num_filhos, valor, status, created_at, docs)
-                     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)`,
+                    `INSERT INTO solicitations (id, cpf, nome, email, nascimento, nome_mae, num_filhos, valor, status, created_at, docs, metadata)
+                     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)`,
                     [
                         cleanCPF,
                         data.cpf,
@@ -192,7 +198,8 @@ export async function createOrUpdateSolicitation(data: Partial<Solicitation> & {
                         data.valor || "350,00",
                         data.status || 'pendente',
                         now,
-                        JSON.stringify(data.docs || {})
+                        JSON.stringify(data.docs || {}),
+                        JSON.stringify(data.metadata || {})
                     ]
                 );
             }

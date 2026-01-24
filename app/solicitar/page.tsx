@@ -570,11 +570,11 @@ export default function SolicitarPage() {
                                         {Array.from({ length: numFilhos }).map((_, i) => (
                                             <DocumentUpload
                                                 key={i}
-                                                label={`Certidão - Filho ${i + 1}`}
+                                                label={`Certidão / RG - Filho ${i + 1}`}
                                                 docType={`certidao_${i}`}
                                                 uploaded={uploadedDocs[`certidao_${i}`]?.name}
                                                 onUpload={handleFileUpload}
-                                                onOpenCamera={() => startCamera(`certidao_${i}`, `Certidão de Nascimento - Filho ${i + 1}`)}
+                                                onOpenCamera={() => startCamera(`certidao_${i}`, `Certidão / RG - Filho ${i + 1}`)}
                                             />
                                         ))}
                                     </div>

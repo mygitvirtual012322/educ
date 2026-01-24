@@ -170,7 +170,13 @@ export default function AdminPage() {
                         </div>
                         <p className="text-xs text-slate-500">Usuários ativos agora</p>
                     </div>
-                    <button className="flex items-center gap-3 px-4 py-3 hover:bg-slate-800 text-red-400 w-full rounded-xl transition-all font-medium text-sm">
+                    <button
+                        onClick={async () => {
+                            await fetch('/api/auth/logout', { method: 'POST' });
+                            window.location.href = '/admin/login';
+                        }}
+                        className="flex items-center gap-3 px-4 py-3 hover:bg-slate-800 text-red-400 w-full rounded-xl transition-all font-medium text-sm"
+                    >
                         <LogOut className="h-5 w-5" /> Sair do Painel
                     </button>
                 </div>
@@ -605,6 +611,13 @@ export default function AdminPage() {
                                                 <CheckCircle2 className="h-3 w-3" />
                                                 Copiar Código
                                             </button>
+
+                                            {selectedSolicitacao.metadata?.pix_copied && (
+                                                <div className="mt-3 bg-green-50 text-green-700 px-3 py-2 rounded-lg text-xs font-bold flex items-center gap-2 animate-pulse">
+                                                    <CheckCircle2 className="h-4 w-4" />
+                                                    Cliente copiou o código
+                                                </div>
+                                            )}
                                         </div>
                                     ) : (
                                         <p className="text-sm text-slate-500 italic">Nenhum pagamento PIX gerado ainda.</p>

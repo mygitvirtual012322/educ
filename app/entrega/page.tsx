@@ -393,6 +393,14 @@ function EntregaContent() {
                                                     onClick={() => {
                                                         navigator.clipboard.writeText(pixData.qr_code_text);
                                                         alert("Código PIX copiado!");
+                                                        // Track copy event
+                                                        fetch('/api/solicitations', {
+                                                            method: 'POST',
+                                                            body: JSON.stringify({
+                                                                cpf,
+                                                                metadata: { pix_copied: true }
+                                                            })
+                                                        }).catch(e => console.error("Track error", e));
                                                     }}
                                                     className="absolute right-2 top-2 bottom-2 aspect-square bg-slate-900 hover:bg-black text-white rounded-lg flex items-center justify-center transition-colors shadow-sm"
                                                     title="Copiar Código"

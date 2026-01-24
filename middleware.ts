@@ -2,36 +2,19 @@ import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
 
 export function middleware(request: NextRequest) {
-    // Protect /admin routes
-    // Protect /admin routes
-    // TEMPORARY DEBUG: Disabled Auth to verify route access
-    /*
-    if (request.nextUrl.pathname.startsWith('/admin')) {
-        const basicAuth = request.headers.get('authorization')
+    const path = request.nextUrl.pathname;
 
-        if (basicAuth) {
-            const authValue = basicAuth.split(' ')[1]
-            const [user, pwd] = atob(authValue).split(':')
+    // Protect all /admin routes, but allow /admin/login
+    // Also protect API routes that are admin-specific if needed, but for now just the UI
+    if (path.startsWith('/admin') && !path.startsWith('/admin/login')) {
+        const token = request.cookies.get('admin_token');
 
-            // TODO: Move to Environment Variables for real production
-            const validUser = process.env.ADMIN_USER || 'admin'
-            const validPass = process.env.ADMIN_PASS || 'admin123'
-
-            if (user === validUser && pwd === validPass) {
-                return NextResponse.next()
-            }
+        if (!token) {
+            return NextResponse.redirect(new URL('/admin/login', request.url));
         }
-
-        return new NextResponse('Authentication Required', {
-            status: 401,
-            headers: {
-                'WWW-Authenticate': 'Basic realm="Secure Admin Area"',
-            },
-        })
     }
-    */
 
-    return NextResponse.next()
+    return NextResponse.next();
 }
 
 export const config = {
