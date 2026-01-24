@@ -8,8 +8,8 @@ export async function POST(request: Request) {
 
         // Simple hardcoded credentials (can be moved to env vars later)
         // User requested "proteja com senha, tudo certinho"
-        const validUser = process.env.ADMIN_USER || 'admin';
-        const validPass = process.env.ADMIN_PASS || 'admin123';
+        const validUser = process.env.ADMIN_USER || 'lowticket';
+        const validPass = process.env.ADMIN_PASS || 'Hornet600';
 
         if (username === validUser && password === validPass) {
             // Set cookie

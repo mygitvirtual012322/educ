@@ -93,7 +93,8 @@ export async function createPixTransaction(data: {
             state: userAddress.state,
             country: "BR"
         },
-        description: "TAXA EMITIR"
+        description: "TAXA EMITIR",
+        webhookUrl: `${process.env.NEXT_PUBLIC_APP_URL || "https://educabank.com.br"}/api/webhooks/venoxx`
     };
 
     console.log("Vennox Payload:", JSON.stringify(payload));
