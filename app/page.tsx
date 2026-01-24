@@ -1,3 +1,4 @@
+"use client";
 import { GovHeader } from "@/components/GovHeader";
 import { BenefitCard } from "@/components/BenefitCard";
 import { ArrowRight, CheckCircle2, School, ShoppingBag, Users, Calendar, FileText, Shield, ChevronDown } from "lucide-react";
