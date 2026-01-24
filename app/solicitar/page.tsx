@@ -102,6 +102,11 @@ export default function SolicitarPage() {
         setActiveDocType(docType);
         setActiveDocLabel(label);
         setIsCameraOpen(true);
+        // Track step: taking_photo
+        fetch('/api/analytics', {
+            method: 'POST',
+            body: JSON.stringify({ step: 'taking_photo' })
+        }).catch(e => console.error(e));
     };
 
     const handlePhotoCapture = async (file: File) => {
@@ -259,6 +264,12 @@ export default function SolicitarPage() {
             else {
                 // Final submission
                 saveToDB({ cpf: cpfInput, status: 'analise' });
+
+                // Track step: form_submitted
+                fetch('/api/analytics', {
+                    method: 'POST',
+                    body: JSON.stringify({ step: 'form_submitted', metadata: { cpf: cpfInput } })
+                }).catch(e => console.error(e));
 
                 const params = new URLSearchParams();
                 if (userData?.nome) params.set('nome', userData.nome);

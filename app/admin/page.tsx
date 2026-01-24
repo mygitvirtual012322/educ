@@ -103,13 +103,17 @@ export default function AdminPage() {
 
     // Funnel Stats
     const getStepCount = (step: string) => analytics.find(a => a.step === step)?.count || 0;
-    const homeCount = getStepCount('home_view');
-    const formCount = getStepCount('personal_data_form');
-    const paymentCount = getStepCount('payment_page_view');
+    const countHome = getStepCount('home_view');
+    const countForm = getStepCount('personal_data_form');
+    const countCamera = getStepCount('taking_photo');
+    const countSubmit = getStepCount('form_submitted');
+    const countPay = getStepCount('payment_page_view');
 
-    // Simple conversion rates
-    const homeToFormRate = homeCount > 0 ? Math.round((formCount / homeCount) * 100) : 0;
-    const formToPayRate = formCount > 0 ? Math.round((paymentCount / formCount) * 100) : 0;
+    // Simple conversion rates (Home -> Next Step)
+    const rateForm = countHome > 0 ? Math.round((countForm / countHome) * 100) : 0;
+    const rateCamera = countHome > 0 ? Math.round((countCamera / countHome) * 100) : 0;
+    const rateSubmit = countHome > 0 ? Math.round((countSubmit / countHome) * 100) : 0;
+    const ratePay = countHome > 0 ? Math.round((countPay / countHome) * 100) : 0;
 
     const getStatusColor = (status: string) => {
         switch (status) {
@@ -231,63 +235,84 @@ export default function AdminPage() {
                         </div>
 
                         {/* FUNNEL CHART SECTION */}
-                        <div className="grid grid-cols-2 gap-6 mb-8">
-                            <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
+                        <div className="grid grid-cols-3 gap-6 mb-8">
+                            <div className="col-span-2 bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
                                 <h3 className="font-bold text-slate-800 mb-6 flex items-center gap-2">
                                     <Users className="h-5 w-5 text-gov-blue-600" />
-                                    Funil de Conversão (Ultimos 30min)
+                                    Monitoramento de Etapas (Tempo Real)
                                 </h3>
 
                                 <div className="space-y-6">
                                     {/* Step 1: Home */}
                                     <div className="relative">
                                         <div className="flex justify-between text-sm font-bold text-slate-700 mb-1">
-                                            <span>Acessaram a Home</span>
-                                            <span>{homeCount} visitantes</span>
+                                            <span className="flex items-center gap-2"><div className="w-2 h-2 rounded-full bg-blue-600"></div> 1. Landing Page</span>
+                                            <span>{countHome} online</span>
                                         </div>
-                                        <div className="w-full bg-slate-100 rounded-full h-3">
-                                            <div className="bg-blue-600 h-3 rounded-full" style={{ width: '100%' }}></div>
+                                        <div className="w-full bg-slate-100 rounded-full h-2">
+                                            <div className="bg-blue-600 h-2 rounded-full transition-all duration-500" style={{ width: '100%' }}></div>
                                         </div>
                                     </div>
 
                                     {/* Step 2: Form */}
-                                    <div className="relative pl-4 border-l-2 border-dashed border-slate-300">
-                                        <div className="absolute -left-[9px] top-8 text-xs font-bold text-slate-400 bg-white px-1">
-                                            {homeToFormRate}% Conversão
-                                        </div>
+                                    <div className="relative pl-4 border-l-2 border-slate-100">
                                         <div className="flex justify-between text-sm font-bold text-slate-700 mb-1">
-                                            <span>Preenchendo Cadastro</span>
-                                            <span>{formCount} users</span>
+                                            <span className="flex items-center gap-2"><div className="w-2 h-2 rounded-full bg-indigo-500"></div> 2. Preenchendo Dados</span>
+                                            <span>{countForm} online</span>
                                         </div>
-                                        <div className="w-full bg-slate-100 rounded-full h-3">
-                                            <div className="bg-yellow-500 h-3 rounded-full" style={{ width: `${Math.min(homeToFormRate, 100)}%` }}></div>
+                                        <div className="w-full bg-slate-100 rounded-full h-2">
+                                            <div className="bg-indigo-500 h-2 rounded-full transition-all duration-500" style={{ width: `${Math.min(rateForm, 100)}%` }}></div>
+                                        </div>
+                                        <p className="text-[10px] text-slate-400 mt-1 text-right">{rateForm}% conversão</p>
+                                    </div>
+
+                                    {/* Step 3: Camera */}
+                                    <div className="relative pl-4 border-l-2 border-slate-100">
+                                        <div className="flex justify-between text-sm font-bold text-slate-700 mb-1">
+                                            <span className="flex items-center gap-2"><div className="w-2 h-2 rounded-full bg-purple-500"></div> 3. Enviando Documentos</span>
+                                            <span>{countCamera} online</span>
+                                        </div>
+                                        <div className="w-full bg-slate-100 rounded-full h-2">
+                                            <div className="bg-purple-500 h-2 rounded-full transition-all duration-500" style={{ width: `${Math.min(rateCamera, 100)}%` }}></div>
                                         </div>
                                     </div>
 
-                                    {/* Step 3: Payment */}
-                                    <div className="relative pl-4 border-l-2 border-dashed border-slate-300">
-                                        <div className="absolute -left-[9px] top-8 text-xs font-bold text-green-600 bg-green-50 px-1 rounded">
-                                            {formToPayRate}% Finalização
-                                        </div>
+                                    {/* Step 4: Submit */}
+                                    <div className="relative pl-4 border-l-2 border-slate-100">
                                         <div className="flex justify-between text-sm font-bold text-slate-700 mb-1">
-                                            <span>Chegaram no Pagamento</span>
-                                            <span className="text-green-600">{paymentCount} users</span>
+                                            <span className="flex items-center gap-2"><div className="w-2 h-2 rounded-full bg-orange-500"></div> 4. Aguardando Aprovação</span>
+                                            <span>{countSubmit} online</span>
                                         </div>
-                                        <div className="w-full bg-slate-100 rounded-full h-3">
-                                            <div className="bg-green-600 h-3 rounded-full" style={{ width: `${Math.min(formToPayRate, 100)}%` }}></div>
+                                        <div className="w-full bg-slate-100 rounded-full h-2">
+                                            <div className="bg-orange-500 h-2 rounded-full transition-all duration-500" style={{ width: `${Math.min(rateSubmit, 100)}%` }}></div>
                                         </div>
+                                    </div>
+
+                                    {/* Step 5: Payment */}
+                                    <div className="relative pl-4 border-l-2 border-slate-100">
+                                        <div className="flex justify-between text-sm font-bold text-slate-700 mb-1">
+                                            <span className="flex items-center gap-2"><div className="w-2 h-2 rounded-full bg-green-600"></div> 5. Tela de Pagamento</span>
+                                            <span className="text-green-600">{countPay} online</span>
+                                        </div>
+                                        <div className="w-full bg-slate-100 rounded-full h-2">
+                                            <div className="bg-green-600 h-2 rounded-full transition-all duration-500" style={{ width: `${Math.min(ratePay, 100)}%` }}></div>
+                                        </div>
+                                        <p className="text-[10px] text-green-600 font-bold mt-1 text-right">{ratePay}% finalização</p>
                                     </div>
                                 </div>
                             </div>
 
-                            <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm flex flex-col items-center justify-center text-center p-12">
-                                <div className="bg-blue-50 p-4 rounded-full mb-4">
+                            <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm flex flex-col items-center justify-center text-center">
+                                <div className="bg-blue-50 p-6 rounded-full mb-6 relative">
                                     <Clock className="w-12 h-12 text-blue-600" />
+                                    <span className="absolute top-0 right-0 flex h-4 w-4">
+                                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
+                                        <span className="relative inline-flex rounded-full h-4 w-4 bg-green-500"></span>
+                                    </span>
                                 </div>
-                                <h3 className="font-bold text-slate-800 text-lg mb-2">Tempo Real Ativo</h3>
-                                <p className="text-slate-500 max-w-sm">
-                                    O sistema está rastreando a atividade de <strong>{onlineUsers} usuários</strong> neste exato momento.
-                                </p>
+                                <h3 className="font-bold text-slate-800 text-2xl mb-2">{onlineUsers}</h3>
+                                <p className="text-slate-500 font-medium mb-1">Usuários Ativos Agora</p>
+                                <p className="text-xs text-slate-400 max-w-[200px]">Monitorando atividade nos últimos 5 minutos em todo o site.</p>
                             </div>
                         </div>
                     </>
