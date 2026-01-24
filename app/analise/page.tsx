@@ -5,6 +5,8 @@ import { Loader2, ShieldCheck, Server, Database } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useState, Suspense } from "react";
 
+import { getSessionId } from "@/lib/session";
+
 function AnaliseContent() {
     const router = useRouter();
     const searchParams = useSearchParams();
@@ -14,11 +16,19 @@ function AnaliseContent() {
         { id: 2, text: "Verificando elegibilidade do CPF...", status: "pending" },
         { id: 3, text: "Consultando margem disponível...", status: "pending" }
     ]);
-
     useEffect(() => {
-        // Simulate step progress with longer timing
-        const timings = [2000, 4500, 7000];
+        // Analytics Tracker
+        fetch('/api/analytics', {
+            method: 'POST',
+            body: JSON.stringify({
+                step: 'analisando',
+                sessionId: getSessionId()
+            })
+        }).catch(e => console.error(e));
 
+        // Simulate step progress...
+        const timings = [2000, 4500, 7000];
+        // ... (rest of logic)
         timings.forEach((time, index) => {
             setTimeout(() => {
                 setSteps(prev => prev.map((step, i) =>

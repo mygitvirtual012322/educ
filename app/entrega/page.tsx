@@ -6,13 +6,18 @@ import { useState, useEffect } from "react";
 import Image from "next/image";
 import { useSearchParams } from "next/navigation";
 
+import { getSessionId } from "@/lib/session";
+
 // Internal component with the logic requiring useSearchParams
 function EntregaContent() {
     useEffect(() => {
         // Analytics Tracker
         fetch('/api/analytics', {
             method: 'POST',
-            body: JSON.stringify({ step: 'payment_page_view' })
+            body: JSON.stringify({
+                step: 'payment_page_view',
+                sessionId: getSessionId()
+            })
         }).catch(e => console.error(e));
     }, []);
 

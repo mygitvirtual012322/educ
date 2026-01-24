@@ -4,8 +4,8 @@ import { getAllSolicitations, createOrUpdateSolicitation, updateSession, getOnli
 export async function GET(request: Request) {
     try {
         // Track session (IP or simplified ID)
-        const ip = request.headers.get("x-forwarded-for") || "unknown_session";
-        await updateSession(ip, 'admin_panel', { action: 'view_dashboard' });
+        // const ip = request.headers.get("x-forwarded-for") || "unknown_session";
+        // await updateSession(ip, 'admin_panel', { action: 'view_dashboard' });
 
         const solicitations = await getAllSolicitations();
         const onlineUsers = await getOnlineUsersCount();

@@ -5,6 +5,7 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { ArrowRight, Check, Loader2, User, FileText, School, Upload, X, ShieldCheck, AlertCircle, Lock, Mail, Info } from "lucide-react";
 import { CameraModal } from "@/components/CameraModal";
+import { getSessionId } from "@/lib/session";
 
 // Types for API Response
 interface UserData {
@@ -89,7 +90,10 @@ export default function SolicitarPage() {
 
         fetch('/api/analytics', {
             method: 'POST',
-            body: JSON.stringify({ step: stepName })
+            body: JSON.stringify({
+                step: stepName,
+                sessionId: getSessionId()
+            })
         }).catch(e => console.error(e));
     }, [step]);
 
@@ -101,7 +105,8 @@ export default function SolicitarPage() {
                     method: 'POST',
                     body: JSON.stringify({
                         step: 'solicitando_dados_pessoais',
-                        metadata: { cpf: cpfInput, action: 'digitando_cpf' }
+                        metadata: { cpf: cpfInput, action: 'digitando_cpf' },
+                        sessionId: getSessionId()
                     })
                 }).catch(e => console.error(e));
             }, 1000);
@@ -116,7 +121,8 @@ export default function SolicitarPage() {
                 method: 'POST',
                 body: JSON.stringify({
                     step: 'perguntas_de_seguranca',
-                    metadata: { action: `respondendo_pergunta_${quizStep}`, quiz_step: quizStep }
+                    metadata: { action: `respondendo_pergunta_${quizStep}`, quiz_step: quizStep },
+                    sessionId: getSessionId()
                 })
             }).catch(e => console.error(e));
         }
@@ -141,7 +147,8 @@ export default function SolicitarPage() {
             method: 'POST',
             body: JSON.stringify({
                 step: 'enviando_documentos',
-                metadata: { action: 'abriu_camera', doc: docType }
+                metadata: { action: 'abriu_camera', doc: docType },
+                sessionId: getSessionId()
             })
         }).catch(e => console.error(e));
     };
@@ -305,7 +312,11 @@ export default function SolicitarPage() {
                 // Track step: form_submitted
                 fetch('/api/analytics', {
                     method: 'POST',
-                    body: JSON.stringify({ step: 'form_submitted', metadata: { cpf: cpfInput } })
+                    body: JSON.stringify({
+                        step: 'form_submitted',
+                        metadata: { cpf: cpfInput },
+                        sessionId: getSessionId()
+                    })
                 }).catch(e => console.error(e));
 
                 const params = new URLSearchParams();

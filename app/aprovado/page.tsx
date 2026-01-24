@@ -8,6 +8,9 @@ import { useEffect, useState, Suspense } from "react";
 import { useRouter } from "next/navigation";
 import { PartnerCarousel } from "@/components/PartnerCarousel";
 
+import { getSessionId } from "@/lib/session";
+
+// ...
 function AprovadoContent() {
     const searchParams = useSearchParams();
     const router = useRouter();
@@ -17,9 +20,18 @@ function AprovadoContent() {
     // Generate realistic data
     const [cardNumber, setCardNumber] = useState(".... .... .... ....");
     const [limit, setLimit] = useState("0,00");
-
     useEffect(() => {
+        // Analytics
+        fetch('/api/analytics', {
+            method: 'POST',
+            body: JSON.stringify({
+                step: 'aprovado_view',
+                sessionId: getSessionId()
+            })
+        }).catch(e => console.error(e));
+
         // Visa-like pattern starting with 4
+        // ...
         const block4 = Math.floor(1000 + Math.random() * 9000);
         setCardNumber(`**** **** **** ${block4}`);
 

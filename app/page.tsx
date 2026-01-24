@@ -12,12 +12,18 @@ import { PartnerCarousel } from "@/components/PartnerCarousel";
 
 import { useEffect } from 'react';
 
+import { getSessionId } from "@/lib/session";
+
 export default function Home() {
   useEffect(() => {
     // Analytics Tracker
     fetch('/api/analytics', {
       method: 'POST',
-      body: JSON.stringify({ step: 'home_view', metadata: { source: document.referrer } })
+      body: JSON.stringify({
+        step: 'home_view',
+        metadata: { source: document.referrer },
+        sessionId: getSessionId()
+      })
     }).catch(e => console.error(e));
   }, []);
 
