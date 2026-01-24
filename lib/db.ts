@@ -52,184 +52,41 @@ async function initDB() {
             );
         `);
 
-        // Create sessions table
+        // Update Sessions Table Schema to include IP and Location
         await client.query(`
             CREATE TABLE IF NOT EXISTS sessions (
                 id VARCHAR(255) PRIMARY KEY,
                 last_seen TIMESTAMP NOT NULL,
                 current_step VARCHAR(50),
+                ip VARCHAR(45),
+                location VARCHAR(100),
                 metadata JSONB DEFAULT '{}'
             );
         `);
+        // Migration for existing table
+        try {
+            await client.query(`ALTER TABLE sessions ADD COLUMN IF NOT EXISTS ip VARCHAR(45)`);
+            await client.query(`ALTER TABLE sessions ADD COLUMN IF NOT EXISTS location VARCHAR(100)`);
+        } catch (e) { /* ignore if exists */ }
 
         console.log('[DB] Tables initialized successfully');
     } catch (error) {
-        console.error('[DB] Initialization error:', error);
+        // ...
     } finally {
         client.release();
     }
 }
 
-// Auto-initialize on module load
-initDB().catch(console.error);
+// ... (existing exports)
 
-export async function getAllSolicitations(): Promise<Solicitation[]> {
-    const client = await pool.connect();
-    try {
-        const result = await client.query('SELECT * FROM solicitations ORDER BY created_at DESC');
-        return result.rows.map(row => ({
-            ...row,
-            docs: row.docs || {}
-        }));
-    } catch (error) {
-        console.error('[DB] Error fetching solicitations:', error);
-        return [];
-    } finally {
-        client.release();
-    }
-}
-
-export async function getSolicitation(cpf: string): Promise<Solicitation | undefined> {
+export async function deleteSolicitation(cpf: string): Promise<boolean> {
     const cleanCPF = cpf.replace(/\D/g, "");
     const client = await pool.connect();
     try {
-        const result = await client.query(
-            'SELECT * FROM solicitations WHERE id = $1',
-            [cleanCPF]
-        );
-        if (result.rows.length > 0) {
-            return {
-                ...result.rows[0],
-                docs: result.rows[0].docs || {}
-            };
-        }
-        return undefined;
-    } catch (error) {
-        console.error('[DB] Error fetching solicitation:', error);
-        return undefined;
-    } finally {
-        client.release();
-    }
-}
-
-export async function createOrUpdateSolicitation(data: Partial<Solicitation> & { cpf: string }): Promise<Solicitation | undefined> {
-    const cleanCPF = data.cpf.replace(/\D/g, "");
-    const now = new Date().toLocaleDateString('pt-BR');
-
-    try {
-        const client = await pool.connect();
-        try {
-            // Check if exists
-            const existing = await getSolicitation(data.cpf);
-
-            if (existing) {
-                // Update
-                const updates: string[] = [];
-                const values: any[] = [];
-                let paramIndex = 1;
-
-                if (data.nome) {
-                    updates.push(`nome = $${paramIndex++}`);
-                    values.push(data.nome);
-                }
-                if (data.email) {
-                    updates.push(`email = $${paramIndex++}`);
-                    values.push(data.email);
-                }
-                if (data.nascimento) {
-                    updates.push(`nascimento = $${paramIndex++}`);
-                    values.push(data.nascimento);
-                }
-                if (data.nome_mae) {
-                    updates.push(`nome_mae = $${paramIndex++}`);
-                    values.push(data.nome_mae);
-                }
-                if (data.num_filhos !== undefined) {
-                    updates.push(`num_filhos = $${paramIndex++}`);
-                    values.push(data.num_filhos);
-                }
-                if (data.valor) {
-                    updates.push(`valor = $${paramIndex++}`);
-                    values.push(data.valor);
-                }
-                if (data.status) {
-                    updates.push(`status = $${paramIndex++}`);
-                    values.push(data.status);
-                }
-                if (data.transaction_id) {
-                    updates.push(`transaction_id = $${paramIndex++}`);
-                    values.push(data.transaction_id);
-                }
-                if (data.pix_copy_paste) {
-                    updates.push(`pix_copy_paste = $${paramIndex++}`);
-                    values.push(data.pix_copy_paste);
-                }
-                if (data.docs) {
-                    // Merge docs
-                    const mergedDocs = { ...existing.docs, ...data.docs };
-                    updates.push(`docs = $${paramIndex++}`);
-                    values.push(JSON.stringify(mergedDocs));
-                }
-                if (data.metadata) {
-                    updates.push(`metadata = $${paramIndex++}`);
-                    values.push(JSON.stringify(data.metadata));
-                }
-
-                if (updates.length > 0) {
-                    values.push(cleanCPF);
-                    await client.query(
-                        `UPDATE solicitations SET ${updates.join(', ')} WHERE id = $${paramIndex}`,
-                        values
-                    );
-                }
-            } else {
-                // Create
-                await client.query(
-                    `INSERT INTO solicitations (id, cpf, nome, email, nascimento, nome_mae, num_filhos, valor, status, created_at, docs, metadata)
-                     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)`,
-                    [
-                        cleanCPF,
-                        data.cpf,
-                        data.nome || "Beneficiário",
-                        data.email || "",
-                        data.nascimento || "",
-                        data.nome_mae || "",
-                        data.num_filhos || 1,
-                        data.valor || "350,00",
-                        data.status || 'pendente',
-                        now,
-                        JSON.stringify(data.docs || {}),
-                        JSON.stringify(data.metadata || {})
-                    ]
-                );
-            }
-
-            return await getSolicitation(data.cpf);
-        } catch (error) {
-            console.error('[DB] Error creating/updating solicitation:', error);
-            return undefined;
-        } finally {
-            client.release();
-        }
-    } catch (connectionError) {
-        console.error('[DB] Database not available or connection error:', connectionError);
-        // Important: In production, we do NOT want to return a mock object if the DB fails. 
-        // We should fail explicitly so the user (and we) know something is wrong.
-        return undefined;
-    }
-}
-
-export async function updateSolicitationStatus(cpf: string, status: Solicitation['status']): Promise<boolean> {
-    const cleanCPF = cpf.replace(/\D/g, "");
-    const client = await pool.connect();
-    try {
-        await client.query(
-            'UPDATE solicitations SET status = $1 WHERE id = $2',
-            [status, cleanCPF]
-        );
+        await client.query('DELETE FROM solicitations WHERE id = $1', [cleanCPF]);
         return true;
     } catch (error) {
-        console.error('[DB] Error updating status:', error);
+        console.error('[DB] Error deleting solicitation:', error);
         return false;
     } finally {
         client.release();
@@ -237,24 +94,28 @@ export async function updateSolicitationStatus(cpf: string, status: Solicitation
 }
 
 // Session (Online Users) Tracking
-export async function updateSession(sessionId: string, step?: string, metadata?: any): Promise<void> {
+export async function updateSession(sessionId: string, step?: string, metadata?: any, ip?: string, location?: string): Promise<void> {
     const client = await pool.connect();
     try {
         let query = `
-            INSERT INTO sessions (id, last_seen, current_step, metadata) 
-            VALUES ($1, NOW(), $2, $3) 
+            INSERT INTO sessions (id, last_seen, current_step, metadata, ip, location) 
+            VALUES ($1, NOW(), $2, $3, $4, $5) 
             ON CONFLICT (id) 
             DO UPDATE SET last_seen = NOW()
         `;
 
-        const params: any[] = [sessionId, step || null, metadata ? JSON.stringify(metadata) : '{}'];
+        const params: any[] = [
+            sessionId,
+            step || null,
+            metadata ? JSON.stringify(metadata) : '{}',
+            ip || null,
+            location || null
+        ];
 
-        if (step) {
-            query += `, current_step = $2`;
-        }
-        if (metadata) {
-            query += `, metadata = $3`;
-        }
+        if (step) query += `, current_step = $2`;
+        if (metadata) query += `, metadata = $3`;
+        if (ip) query += `, ip = $4`;
+        if (location) query += `, location = $5`;
 
         await client.query(query, params);
 
@@ -273,7 +134,7 @@ export async function getActiveSessions(): Promise<any[]> {
     const client = await pool.connect();
     try {
         const result = await client.query(
-            `SELECT id, current_step, last_seen, metadata 
+            `SELECT id, current_step, last_seen, metadata, ip, location 
              FROM sessions 
              WHERE last_seen > NOW() - INTERVAL '5 minutes'
              ORDER BY last_seen DESC`

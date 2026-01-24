@@ -7,11 +7,20 @@ export async function POST(request: Request) {
         const { step, metadata, sessionId: bodySessionId } = body;
 
         // Track session via ID (preferred) or IP (fallback)
-        const ip = request.headers.get("x-forwarded-for") || "unknown_session";
+        const forwardedFor = request.headers.get("x-forwarded-for");
+        const ip = forwardedFor ? forwardedFor.split(',')[0] : "unknown_ip";
         const sessionId = bodySessionId || ip;
 
-        // Update live status
-        await updateSession(sessionId, step, metadata);
+        // Simplify Location: If metadata has city/uf, use it.
+        let location = null;
+        if (metadata?.city && metadata?.uf) {
+            location = `${metadata.city} - ${metadata.uf}`;
+        } else if (metadata?.localidade && metadata?.uf) {
+            location = `${metadata.localidade} - ${metadata.uf}`;
+        }
+
+        // Update live status with IP and Location
+        await updateSession(sessionId, step, metadata, ip, location || undefined);
 
         // Log historical event for funnel
         await trackEvent(sessionId, step, metadata);

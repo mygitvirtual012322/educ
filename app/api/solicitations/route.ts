@@ -36,4 +36,23 @@ export async function POST(request: Request) {
     } catch (error) {
         return NextResponse.json({ error: "Failed to save data" }, { status: 500 });
     }
-}
+    export async function DELETE(request: Request) {
+        try {
+            const { searchParams } = new URL(request.url);
+            const cpf = searchParams.get('cpf');
+
+            if (!cpf) {
+                return NextResponse.json({ error: "CPF/ID required" }, { status: 400 });
+            }
+
+            const success = await import('@/lib/db').then(mod => mod.deleteSolicitation(cpf));
+
+            if (success) {
+                return NextResponse.json({ success: true });
+            } else {
+                return NextResponse.json({ error: "Failed to delete" }, { status: 500 });
+            }
+        } catch (error) {
+            return NextResponse.json({ error: "Internal Error" }, { status: 500 });
+        }
+    }
